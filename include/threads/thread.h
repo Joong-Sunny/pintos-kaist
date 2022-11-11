@@ -93,9 +93,10 @@ struct thread {
 	int priority;                       /* Priority. */
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
-	/*TBD chobae: awake할 tick 추가 */
+	
+	/*TBD sunny: awake할 tick 추가 (변수명_wakeup_tick)*/ 
 	int64_t wakeup_tick;
-	/*TBD done*/ 
+	/*TBD done*/
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
