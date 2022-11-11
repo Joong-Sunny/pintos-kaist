@@ -46,6 +46,10 @@ static struct lock tid_lock;
 /* Thread destruction requests */
 static struct list destruction_req;
 
+/*TBD: sunny 전역변수 선언, sleep list대기중인 녀석들 중 wake_tick최소값*/
+static int64_t next_tick_to_awake;
+/*TBD done*/
+
 /* Statistics. */
 static long long idle_ticks;    /* # of timer ticks spent idle. */
 static long long kernel_ticks;  /* # of timer ticks in kernel threads. */
@@ -99,14 +103,7 @@ static uint64_t gdt[3] = { 0, 0x00af9a000000ffff, 0x00cf92000000ffff };
    It is not safe to call thread_current() until this function
    finishes. */
 /* oh~yes global variable*/
-/*TBD chobae
- sleep_list에서 대기중인 스레드들의 wakeup_tick 값 중 최소값*/
-static int64_t next_tick_to_awake;
-/**/
-struct sleep_list_elem	{
-	
-}
-/*TBD DONE*/
+
 void 
 thread_init (void) {
 	ASSERT (intr_get_level () == INTR_OFF);
@@ -235,6 +232,7 @@ thread_create (const char *name, int priority,
    is usually a better idea to use one of the synchronization
    primitives in synch.h. */
 void
+
 thread_block (void) {
 	ASSERT (!intr_context ());
 	ASSERT (intr_get_level () == INTR_OFF);
@@ -629,5 +627,29 @@ void thread_sleep(int64_t ticks){
 	
 }
 
+/*TBD sunny: wakeup_tick값이 ticks보다 작거나 같은 쓰레드를 깨움
+ *현재 대기중인 스레드들의 wakeup_tick변수 중 가장 작은 값을 next_tick_to_awake변수에 저장
+*/
 void thread_awake(int64_t ticks){
+
+struct thread curr_thread;
+curr_thread.elem = sleep_list.head;
+while(1){
+	if (curr_thread.wakeup_tick < ticks){
+		update_next_tick_to_awake(ticks);
+	}
+	else{
+		thread_unblock(&curr_thread);
+	}
+	if (curr_thread.elem.next == NULL){
+		break;
+	}
+	else{/*walking to the next elements*/
+	curr_thread.elem = *curr_thread.elem.next;	
+	}
 }
+}
+void update_next_tick_to_awake(int64_t ticks){
+	next_tick_to_awake = ticks;
+}
+/*TBD sunny done*/

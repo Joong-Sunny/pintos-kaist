@@ -129,7 +129,14 @@ static void
 timer_interrupt (struct intr_frame *args UNUSED) {
 	ticks++;
 	thread_tick ();
+	/*TBD sunny: 매 틱마다 thread_awake 를 소환*/
+	while(1){
+		thread_awake(ticks);
+	}
+	/*TBD done*/
 }
+
+
 
 /* Returns true if LOOPS iterations waits for more than one timer
    tick, otherwise false. */
