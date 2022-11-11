@@ -588,3 +588,23 @@ allocate_tid (void) {
 
 	return tid;
 }
+
+void thread_sleep(int64_t ticks){
+	// TODO 
+ /* 현재 스레드가 idle 스레드가 아닐경우 (식당이 꽉 찼을 때) thread의 상태를 BLOCKED로 바꾸고 깨어나야 할 ticks을 저장한다.
+ -  thread_block함수 호출 (-> 현재 스레드가 THREAD_BLOCK 으로 바뀜)
+ -  현재 스레드를 슬립 큐에 삽입한 후에 스케줄한다. 
+ -  awake함수가 실행되어야 할 tick값을 update
+ - 해당 과정중에는 인터럽트를 받아들이지 않는다. 
+ - 함수가 다 실행되면 인터럽트를 받아들인다.
+ */
+
+ 	struct thread *curr = thread_current ();  //   얘를 블락시키기 -> 깨어나야할 시간(tick)을 저장
+	intr_disable ();
+	
+	
+	intr_enable ();
+}
+
+void thread_awake(int64_t ticks){
+}
