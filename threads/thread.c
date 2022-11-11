@@ -92,7 +92,16 @@ static uint64_t gdt[3] = { 0, 0x00af9a000000ffff, 0x00cf92000000ffff };
 
    It is not safe to call thread_current() until this function
    finishes. */
-void
+/* oh~yes global variable*/
+/*TBD chobae
+ sleep_list에서 대기중인 스레드들의 wakeup_tick 값 중 최소값*/
+static int64_t next_tick_to_awake;
+/**/
+struct sleep_list_elem	{
+	
+}
+/*TBD DONE*/
+void 
 thread_init (void) {
 	ASSERT (intr_get_level () == INTR_OFF);
 
