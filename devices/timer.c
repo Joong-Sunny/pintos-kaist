@@ -90,13 +90,13 @@ timer_elapsed (int64_t then) {
 /* Suspends execution for approximately TICKS timer ticks. */
 void
 timer_sleep (int64_t ticks) {
-	// TODO: busy waits -> sleep/wake up 으로 재구현하기 
+	// TBD: busy waits -> sleep/wake up 으로 재구현하기 
 	int64_t start = timer_ticks ();
 
 	// ASSERT (intr_get_level () == INTR_ON);
 	// while (timer_elapsed (start) < ticks)
 	// 	thread_yield ();
-	// TODO: 새로 구현한 thread를 sleep queue에 삽입하는 함수를 호출
+	// TBD: 새로 구현한 thread를 sleep queue에 삽입하는 함수를 호출
 }
 
 /* Suspends execution for approximately MS milliseconds. */
