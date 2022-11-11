@@ -11,6 +11,8 @@
 #include "threads/synch.h"
 #include "threads/vaddr.h"
 #include "intrinsic.h"
+
+
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -27,6 +29,10 @@
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
 static struct list ready_list;
+
+/*TBD sunny: addd BLOCKED LIST and init it*/
+static struct list sleep_list;
+/*TBD DONE*/
 
 /* Idle thread. */
 static struct thread *idle_thread;
@@ -118,6 +124,9 @@ thread_init (void) {
 	lock_init (&tid_lock);
 	list_init (&ready_list);
 	list_init (&destruction_req);
+	/*TBD sunny: init sleep_list*/
+	list_init (&sleep_list);
+	/*TBD sunny done*/
 
 	/* Set up a thread structure for the running thread. */
 	initial_thread = running_thread ();
