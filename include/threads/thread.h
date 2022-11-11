@@ -90,7 +90,9 @@ struct thread {
 	tid_t tid;                          /* Thread identifier. */
 	enum thread_status status;          /* Thread state. */
 	char name[16];                      /* Name (for debugging purposes). */
+	uint8_t *stack; 					/* TBD sunny: Saved stack pointer. */
 	int priority;                       /* Priority. */
+	struct list_elem allelem;/*TBD sunny: added*/
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
 	
