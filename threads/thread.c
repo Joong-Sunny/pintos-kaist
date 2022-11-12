@@ -34,7 +34,11 @@ static struct list ready_list;
 static struct list sleep_list;
 /*TBD DONE*/
 
-/* Idle thread. */
+/*TBD chobae: 모든 thread를 관리하는 list*/
+static struct list all_list;
+/*TBD DONE*/
+
+/* Idle thread. */                       
 static struct thread *idle_thread;
 
 /* Initial thread, the thread running init.c:main(). */
