@@ -611,20 +611,23 @@ void thread_sleep(int64_t ticks){
  -  현재 스레드를 슬립 큐에 삽입한 후에 스케줄한다. 
  -  awake함수가 실행되어야 할 tick값을 update
  - 해당 과정중에는 인터럽트를 받아들이지 않는다. 
- - 함수가 다 실행되면 인터럽트를 받아들인다.(?)
+ - 함수가 다 실행되면 인터럽트를 받아들인다.
  */
 
  	struct thread *curr = thread_current ();  //   얘를 블락시키기 -> 깨어나야할 시간(tick)을 저장
-	intr_disable ();
+	enum intr_level old_level;
+	intr_disable ();   // Disables interrupts and returns the previous interrupt status.
+
 	if (curr != idle_thread)
 	{
 		thread_block();
-		/* TBD cur를 sleep list에 추가*/
+		curr->elem = sleep_list.head;
+		sleep_list.head.next = curr->elem.next;
+
 		do_schedule (THREAD_BLOCKED);
-		/* TBD curr->wakeup_tick   업데이트*/
+		curr->wakeup_tick = ticks;
 	}
-	intr_set_level (old_level);  // intr_enable () ?
-	
+	intr_enable();
 }
 
 /*TBD sunny: wakeup_tick값이 ticks보다 작거나 같은 쓰레드를 깨움
