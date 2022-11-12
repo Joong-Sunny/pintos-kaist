@@ -47,7 +47,7 @@ static struct lock tid_lock;
 static struct list destruction_req;
 
 /*TBD: sunny 전역변수 선언, sleep list대기중인 녀석들 중 wake_tick최소값*/
-static int64_t next_tick_to_awake;
+static int64_t next_tick_to_awake = INT64_MAX;
 /*TBD done*/
 
 /* Statistics. */
@@ -641,7 +641,7 @@ while(1){
 	else{
 		thread_unblock(&curr_thread);
 	}
-	if (curr_thread.elem.next == NULL){
+	if (curr_thread.elem.next == NULL){/*walking done*/
 		break;
 	}
 	else{/*walking to the next elements*/
@@ -650,6 +650,7 @@ while(1){
 }
 }
 void update_next_tick_to_awake(int64_t ticks){
-	next_tick_to_awake = ticks;
+	if (next_tick_to_awake < ticks)
+		next_tick_to_awake = ticks;
 }
 /*TBD sunny done*/
