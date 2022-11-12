@@ -633,24 +633,21 @@ void thread_sleep(int64_t ticks){
  *현재 대기중인 스레드들의 wakeup_tick변수 중 가장 작은 값을 next_tick_to_awake변수에 저장*/
 void thread_awake(int64_t ticks){
 
-  struct list_elem *specific_elem= list_begin(&sleep_list);
-	while(1){
-		struct thread *current_thread = list_entry(specific_elem, struct thread, elem);
+struct list_elem *specific_elem= list_begin(&sleep_list);
+while(1){
+	struct thread *current_thread = list_entry(specific_elem, struct thread, elem);
 
-		if (current_thread->wakeup_tick < ticks){
-			update_next_tick_to_awake(ticks);
-		}
-		else{
-			list_remove( &(current_thread->elem) );
-			thread_unblock(&current_thread);
-		}
-		if (current_thread->elem.next == NULL){/*walking done*/
-			break;
-		}
-		else{/*walking to the next elements*/
-		current_thread->elem = *(current_thread->elem.next);	
-		}
+	if (current_thread->wakeup_tick < ticks)
+		update_next_tick_to_awake(ticks);
+	else{
+		list_remove( &(current_thread->elem) );
+		thread_unblock(&current_thread);
 	}
+	if (current_thread->elem.next == NULL)//walking done
+		break;
+	else//walking to the next elements
+	current_thread->elem = *(current_thread->elem.next);
+}
 }
 
 void update_next_tick_to_awake(int64_t ticks){
