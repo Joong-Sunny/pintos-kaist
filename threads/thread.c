@@ -34,7 +34,11 @@ static struct list ready_list;
 static struct list sleep_list;
 /*TBD DONE*/
 
-/* Idle thread. */
+/*TBD chobae: 모든 thread를 관리하는 list*/
+static struct list all_list;
+/*TBD DONE*/
+
+/* Idle thread. */                       
 static struct thread *idle_thread;
 
 /* Initial thread, the thread running init.c:main(). */
@@ -614,19 +618,17 @@ void thread_sleep(int64_t ticks){
  - 함수가 다 실행되면 인터럽트를 받아들인다.
  */
 
+	enum intr_level old_level =intr_disable (); // Disables interrupts and returns the previous interrupt status.
  	struct thread *curr = thread_current ();  //   얘를 블락시키기 -> 깨어나야할 시간(tick)을 저장
-	enum intr_level old_level;
-	intr_disable ();   // Disables interrupts and returns the previous interrupt status.
-
+   
 	if (curr != idle_thread)
 	{
-		thread_block();
-		curr->elem = sleep_list.head;
-		list_push_back(&sleep_list, &(curr->elem)); //ORG code: sleep_list.head.next = curr->elem.next;
-		do_schedule (THREAD_BLOCKED);
+		list_push_back(&sleep_list, &(curr->elem));
 		curr->wakeup_tick = ticks;
+		update_next_tick_to_awake(ticks);    
+		thread_block();
 	}
-	intr_enable();
+  	intr_set_level(old_level);                 // 기존 인터럽트 레벨을 복구(원래 disabled였을 수도 있어서)
 }
 
 /*TBD sunny: wakeup_tick값이 ticks보다 작거나 같은 쓰레드를 깨움
