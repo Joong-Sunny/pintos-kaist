@@ -155,4 +155,8 @@ void update_next_tick_to_awake(int64_t ticks);	// 최소 틱을 가진 스레드
 int64_t get_next_tick_to_awake(void);	// thread.c의 next_tick_to_awake 반환
 /*TBD DONE*/
 
+/*TBD chobae: 2. priority scheduling 추가된 함수*/
+void test_max_priority(void);	// 현재 실행중인 스레드와 가장 높은 우선순위의 스레드의 우선순위를 비교하여 스케줄링
+bool cmp_priority(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);	// 인자로 주어진 스레드들의 우선순위를 비교
+/*TBD DONE*/
 #endif /* threads/thread.h */
