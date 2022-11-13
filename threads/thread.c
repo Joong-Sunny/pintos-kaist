@@ -345,8 +345,11 @@ thread_set_priority (int new_priority) {
 	/*TODO : thread의 우선순위가 변경되었을때 우선순위에 따라
 			 선점이 발생하게함
 			*/
-		//1. remove
-		//2. insert_ordered
+
+	// DONE BY suyeon
+	if (cmp_priority(thread_current()->priority, list_entry(list_begin(&ready_list), struct thread, elem)->priority, NULL)) {
+		thread_yield();
+	}
 }
 
 /* Returns the current thread's priority. */
