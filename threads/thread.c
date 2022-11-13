@@ -228,6 +228,11 @@ thread_create (const char *name, int priority,
 	/*TODO : 생성된 스레드의 우선순위가 
 			현재 실행중인 스레드의 우선순위보다 높다면 CPU를 양보
 			*/
+	t->priority = PRI_DEFAULT;
+	struct thread *cur = thread_current();
+	if (cmp_priority(cur->priority, t->priority, NULL))	{
+		thread_yield();
+	}
 	return tid;
 }
 
@@ -262,13 +267,14 @@ thread_unblock (struct thread *t) {
 
 	old_level = intr_disable ();
 	ASSERT (t->status == THREAD_BLOCKED);
-	list_push_back (&ready_list, &t->elem);
+	list_insert_ordered (&ready_list, &t->elem, cmp_priority, NULL);
 	t->status = THREAD_READY;
 	intr_set_level (old_level);
 
 	/*TODO : 스레드가 unblock 될때 우선순위 순으로 정렬 되어 
 			ready_list에 삽입되도록 수정
 			*/
+	
 }
 
 /* Returns the name of the running thread. */
@@ -333,9 +339,6 @@ thread_yield (void) {
 	do_schedule (THREAD_READY);
 	intr_set_level (old_level);
 	
-	/*TODO : 현재 thread가 CPU를 양보하여 ready_list에 삽입 될 때 
-			우선순위 순서로 정렬되어 삽입 되도록 수정
-			*/
 }
 
 /* Sets the current thread's priority to NEW_PRIORITY. */
