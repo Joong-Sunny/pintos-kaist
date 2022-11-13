@@ -225,7 +225,9 @@ thread_create (const char *name, int priority,
 
 	/* Add to run queue. */
 	thread_unblock (t);
-
+	/*TODO : 생성된 스레드의 우선순위가 
+			현재 실행중인 스레드의 우선순위보다 높다면 CPU를 양보
+			*/
 	return tid;
 }
 
@@ -263,6 +265,10 @@ thread_unblock (struct thread *t) {
 	list_push_back (&ready_list, &t->elem);
 	t->status = THREAD_READY;
 	intr_set_level (old_level);
+
+	/*TODO : 스레드가 unblock 될때 우선순위 순으로 정렬 되어 
+			ready_list에 삽입되도록 수정
+			*/
 }
 
 /* Returns the name of the running thread. */
@@ -326,12 +332,21 @@ thread_yield (void) {
 		list_push_back (&ready_list, &curr->elem);
 	do_schedule (THREAD_READY);
 	intr_set_level (old_level);
+	
+	/*TODO : 현재 thread가 CPU를 양보하여 ready_list에 삽입 될 때 
+			우선순위 순서로 정렬되어 삽입 되도록 수정
+			*/
 }
 
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void
 thread_set_priority (int new_priority) {
 	thread_current ()->priority = new_priority;
+	/*TODO : thread의 우선순위가 변경되었을때 우선순위에 따라
+			 선점이 발생하게함
+			*/
+		//1. remove
+		//2. insert_ordered
 }
 
 /* Returns the current thread's priority. */
@@ -650,12 +665,26 @@ void thread_awake(int64_t wakeup_tick){
 
 
 void update_next_tick_to_awake(int64_t ticks){
-	if (next_tick_to_awake > ticks)
+	if (next_tick_to_awake < ticks)
 		next_tick_to_awake = ticks;
 }
 
 int64_t get_next_tick_to_awake(void){
 	return next_tick_to_awake;
+	
 }
 /*TBD sunny done*/
 
+
+/* TODO : 현재 실행중인 스레드와 가장 높은 우선순위의 스레드의 우선순위를 비교하여 스케줄링*/
+void test_max_priority(void){
+	// ready_list가 비어있지 않은지 확인
+}
+/* TODO : 인자로 주어진 스레드들의 우선순위를 비교
+   para -> compare thread a, compare thread b
+   return -> a > b : 1 , a < b : 0
+*/
+bool cmp_priority(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED)	{
+	//string 비교할 때 처럼 bool 사용하기
+	// list_insert_ordered() 함수에서 사용하기 위해 정렬 방법을 결정하기 위한 코드 작성
+}
