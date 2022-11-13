@@ -687,5 +687,7 @@ void test_max_priority(void){
 bool cmp_priority(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED)	{
 	//string 비교할 때 처럼 bool 사용하기
 	// list_insert_ordered() 함수에서 사용하기 위해 정렬 방법을 결정하기 위한 코드 작성
-	return list_entry(a, struct thread, elem)->priority > list_entry(b, struct thread, elem)->priority;
+
+	// list_insert_ordered에서 사용할 함수. a < b 이면 true 를 리턴해야 한다 
+	return list_entry(a, struct thread, elem)->priority < list_entry(b, struct thread, elem)->priority;
 }
