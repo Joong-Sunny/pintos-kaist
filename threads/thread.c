@@ -51,7 +51,7 @@ static struct lock tid_lock;
 static struct list destruction_req;
 
 /*TBD: sunny 전역변수 선언, sleep list대기중인 녀석들 중 wake_tick최소값*/
-static int64_t next_tick_to_awake = INT64_MAX;
+static int64_t next_tick_to_awake;
 /*TBD done*/
 
 /* Statistics. */
@@ -617,43 +617,40 @@ void thread_sleep(int64_t ticks){
  - 해당 과정중에는 인터럽트를 받아들이지 않는다. 
  - 함수가 다 실행되면 인터럽트를 받아들인다.
  */
-
 	enum intr_level old_level =intr_disable (); // Disables interrupts and returns the previous interrupt status.
  	struct thread *curr = thread_current ();  //   얘를 블락시키기 -> 깨어나야할 시간(tick)을 저장
-   
-	if (curr != idle_thread)
-	{
-		list_push_back(&sleep_list, &(curr->elem));
-		curr->wakeup_tick = ticks;
-		update_next_tick_to_awake(ticks);    
-		thread_block();
-	}
+
+	ASSERT(curr != idle_thread);
+	update_next_tick_to_awake(curr->wakeup_tick = ticks);    
+	list_push_back(&sleep_list, &curr->elem);
+	// thread_block();
+	do_schedule(THREAD_BLOCKED);
   	intr_set_level(old_level);                 // 기존 인터럽트 레벨을 복구(원래 disabled였을 수도 있어서)
+
 }
 
 /*TBD sunny: wakeup_tick값이 ticks보다 작거나 같은 쓰레드를 깨움
  *현재 대기중인 스레드들의 wakeup_tick변수 중 가장 작은 값을 next_tick_to_awake변수에 저장*/
-void thread_awake(int64_t ticks){
+void thread_awake(int64_t wakeup_tick){
+  next_tick_to_awake = INT64_MAX;
+  struct list_elem *e;
+  e = list_begin(&sleep_list);
+  while(e != list_end(&sleep_list)){
+    struct thread * t = list_entry(e, struct thread, elem);
 
-struct list_elem *specific_elem= list_begin(&sleep_list);
-while(1){
-	struct thread *current_thread = list_entry(specific_elem, struct thread, elem);
+    if(wakeup_tick >= t->wakeup_tick){
+      e = list_remove(&t->elem);
+      thread_unblock(t);
+    }else{
+      e = list_next(e);
+      update_next_tick_to_awake(t->wakeup_tick);
+    }
+  }
+}
 
-	if (current_thread->wakeup_tick < ticks)
-		update_next_tick_to_awake(ticks);
-	else{
-		list_remove( &(current_thread->elem) );
-		thread_unblock(&current_thread);
-	}
-	if (current_thread->elem.next == NULL)//walking done
-		break;
-	else//walking to the next elements
-	current_thread->elem = *(current_thread->elem.next);
-}
-}
 
 void update_next_tick_to_awake(int64_t ticks){
-	if (next_tick_to_awake < ticks)
+	if (next_tick_to_awake > ticks)
 		next_tick_to_awake = ticks;
 }
 
