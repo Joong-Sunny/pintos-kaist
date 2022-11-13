@@ -623,7 +623,7 @@ void thread_sleep(int64_t ticks){
    
 	if (curr != idle_thread)
 	{
-		list_push_back(&sleep_list, &curr->elem);
+		list_push_back(&sleep_list, &(curr->elem));
 		curr->wakeup_tick = ticks;
 		update_next_tick_to_awake(ticks);    
 		thread_block();
@@ -632,29 +632,33 @@ void thread_sleep(int64_t ticks){
 }
 
 /*TBD sunny: wakeup_tick값이 ticks보다 작거나 같은 쓰레드를 깨움
- *현재 대기중인 스레드들의 wakeup_tick변수 중 가장 작은 값을 next_tick_to_awake변수에 저장
-*/
+ *현재 대기중인 스레드들의 wakeup_tick변수 중 가장 작은 값을 next_tick_to_awake변수에 저장*/
 void thread_awake(int64_t ticks){
 
-struct thread curr_thread;
-curr_thread.elem = sleep_list.head;
+struct list_elem *specific_elem= list_begin(&sleep_list);
 while(1){
-	if (curr_thread.wakeup_tick < ticks){
+	struct thread *current_thread = list_entry(specific_elem, struct thread, elem);
+
+	if (current_thread->wakeup_tick < ticks)
 		update_next_tick_to_awake(ticks);
-	}
 	else{
-		thread_unblock(&curr_thread);
+		list_remove( &(current_thread->elem) );
+		thread_unblock(&current_thread);
 	}
-	if (curr_thread.elem.next == NULL){/*walking done*/
+	if (current_thread->elem.next == NULL)//walking done
 		break;
-	}
-	else{/*walking to the next elements*/
-	curr_thread.elem = *curr_thread.elem.next;	
-	}
+	else//walking to the next elements
+	current_thread->elem = *(current_thread->elem.next);
 }
 }
+
 void update_next_tick_to_awake(int64_t ticks){
 	if (next_tick_to_awake < ticks)
 		next_tick_to_awake = ticks;
 }
+
+int64_t get_next_tick_to_awake(void){
+	return next_tick_to_awake;
+}
 /*TBD sunny done*/
+
