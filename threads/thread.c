@@ -345,6 +345,8 @@ thread_set_priority (int new_priority) {
 	/*TODO : thread의 우선순위가 변경되었을때 우선순위에 따라
 			 선점이 발생하게함
 			*/
+		//1. remove
+		//2. insert_ordered
 }
 
 /* Returns the current thread's priority. */
@@ -683,5 +685,6 @@ void test_max_priority(void){
    return -> a > b : 1 , a < b : 0
 */
 bool cmp_priority(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED)	{
+	//string 비교할 때 처럼 bool 사용하기
 	// list_insert_ordered() 함수에서 사용하기 위해 정렬 방법을 결정하기 위한 코드 작성
 }
