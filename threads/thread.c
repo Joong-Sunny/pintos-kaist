@@ -347,9 +347,7 @@ thread_set_priority (int new_priority) {
 			*/
 
 	// DONE BY suyeon
-	if (cmp_priority(thread_current()->priority, list_entry(list_begin(&ready_list), struct thread, elem)->priority, NULL)) {
-		thread_yield();
-	}
+	test_max_priority();
 }
 
 /* Returns the current thread's priority. */
@@ -682,6 +680,12 @@ int64_t get_next_tick_to_awake(void){
 /* TODO : 현재 실행중인 스레드와 가장 높은 우선순위의 스레드의 우선순위를 비교하여 스케줄링*/
 void test_max_priority(void){
 	// ready_list가 비어있지 않은지 확인
+	// Done by suyeon
+	if(&ready_list) {
+		if (cmp_priority(thread_current()->priority, list_entry(list_begin(&ready_list), struct thread, elem)->priority, NULL)) {
+			thread_yield();
+		}
+	}
 }
 /* TODO : 인자로 주어진 스레드들의 우선순위를 비교
    para -> compare thread a, compare thread b
