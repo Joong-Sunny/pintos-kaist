@@ -124,13 +124,15 @@ timer_print_stats (void) {
 }
 
 /* Timer interrupt handler. */
+/* 매 틱마다 호출되는 인터럽트 핸들러.  CPU에 내장된 타이머가 자동으로 이 인터럽트를 일으켜준다. */
 static void
 timer_interrupt (struct intr_frame *args UNUSED) {
-	ticks++;
+	ticks++;			// 매 ticks마다 호출되므로 전역 ticks를 올려준다.
 	thread_tick ();
 	/*TBD sunny: 매 틱마다 thread_awake 를 소환*/
 	if (get_next_tick_to_awake() < ticks ){
-		thread_awake(ticks);
+		// 만약 다음에 깨어나야하는 ticks가 전역 ticks보다 작다면, 일어날 시간이 된 스레드가 아마도 있을 확률이 있다!
+		thread_awake(ticks);   // 깨우러 가자
 	}
 	/*TBD done*/
 }
