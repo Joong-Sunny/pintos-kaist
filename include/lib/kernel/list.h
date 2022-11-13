@@ -100,12 +100,11 @@ struct list {
    name of the outer structure STRUCT and the member name MEMBER
    of the list element.  See the big comment at the top of the
    file for an example. */
-/* TODO : 에러 잡혀있어서 봤는데 뭔지 모름..*/
-/* list_elem를 인자로 list_elem이 포함된 struct의 포인터를 반환*/
-#define list_entry(LIST_ELEM, STRUCT, MEMBER)           
-	((STRUCT *) ((uint8_t *) &(LIST_ELEM)->next     
+/*TBD chobae: \로 한 한줄로 길게 쓴 코드를 나눈것임.*/
+#define list_entry(LIST_ELEM, STRUCT, MEMBER)           \
+	((STRUCT *) ((uint8_t *) &(LIST_ELEM)->next     \
 		- offsetof (STRUCT, MEMBER.next)))
-
+/*TBD chobae done*/
 void list_init (struct list *);
 
 /* List traversal. */
