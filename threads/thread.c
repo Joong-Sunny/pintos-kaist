@@ -223,16 +223,18 @@ thread_create (const char *name, int priority,
 	t->tf.cs = SEL_KCSEG;
 	t->tf.eflags = FLAG_IF;
 
-	/* Add to run queue. */
-	thread_unblock (t);
-	/*TODO : 생성된 스레드의 우선순위가 
-			현재 실행중인 스레드의 우선순위보다 높다면 CPU를 양보
-			*/
 	t->priority = priority;
+	thread_unblock (t); // readylist <- (t) insert!
+	
 	struct thread *cur = thread_current();
-	if (!cmp_priority(cur, t, NULL))	{
-		thread_yield();
+	
+	if (!list_empty(&ready_list)){
+		if (cur->priority <= t->priority) {
+		// if (!cmp_priority(cur, t, NULL)){
+			thread_yield();
+		}
 	}
+	
 	return tid;
 }
 
@@ -270,11 +272,6 @@ thread_unblock (struct thread *t) {
 	list_insert_ordered (&ready_list, &t->elem, cmp_priority, NULL);
 	t->status = THREAD_READY;
 	intr_set_level (old_level);
-
-	/*TODO : 스레드가 unblock 될때 우선순위 순으로 정렬 되어 
-			ready_list에 삽입되도록 수정
-			*/
-	
 }
 
 /* Returns the name of the running thread. */
