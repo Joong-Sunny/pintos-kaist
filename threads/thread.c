@@ -228,7 +228,7 @@ thread_create (const char *name, int priority,
 	/*TODO : 생성된 스레드의 우선순위가 
 			현재 실행중인 스레드의 우선순위보다 높다면 CPU를 양보
 			*/
-	t->priority = PRI_DEFAULT;
+	t->priority = priority;
 	struct thread *cur = thread_current();
 	if (cmp_priority(cur->priority, t->priority, NULL))	{
 		thread_yield();
