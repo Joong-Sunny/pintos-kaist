@@ -230,7 +230,7 @@ thread_create (const char *name, int priority,
 			*/
 	t->priority = priority;
 	struct thread *cur = thread_current();
-	if (cmp_priority(cur->priority, t->priority, NULL))	{
+	if (!cmp_priority(cur, t, NULL))	{
 		thread_yield();
 	}
 	return tid;
@@ -684,8 +684,9 @@ int64_t get_next_tick_to_awake(void){
 void test_max_priority(void){
 	// ready_list가 비어있지 않은지 확인
 	// Done by suyeon
-	if(&ready_list) {
-		if (cmp_priority(thread_current()->priority, list_entry(list_begin(&ready_list), struct thread, elem)->priority, NULL)) {
+	if(!list_empty(&ready_list)) {
+		if (!cmp_priority(thread_current(), list_entry(list_begin(&ready_list), struct thread, elem), NULL)) {
+			/*현재쓰레드.priority <= readylist의 첫번째*/
 			thread_yield();
 		}
 	}
@@ -695,9 +696,9 @@ void test_max_priority(void){
    return -> a > b : 1 , a < b : 0
 */
 bool cmp_priority(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED)	{
-	//string 비교할 때 처럼 bool 사용하기
-	// list_insert_ordered() 함수에서 사용하기 위해 정렬 방법을 결정하기 위한 코드 작성
+	/*list_insert_ordered에서 사용할 함수. a > b 이면 true 를 리턴해야 한다 */
 
-	// list_insert_ordered에서 사용할 함수. a < b 이면 true 를 리턴해야 한다 
-	return list_entry(a, struct thread, elem)->priority < list_entry(b, struct thread, elem)->priority;
+	struct thread *former = list_entry(a, struct thread, elem);
+	struct thread *latter = list_entry(b, struct thread, elem);
+	return former->priority > latter->priority;
 }
