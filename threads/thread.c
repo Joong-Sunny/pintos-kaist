@@ -223,7 +223,7 @@ thread_create (const char *name, int priority,
 	t->tf.cs = SEL_KCSEG;
 	t->tf.eflags = FLAG_IF;
 
-	t->priority = priority;
+	// t->priority = priority;
 	thread_unblock (t); // readylist <- (t) insert!
 	
 	struct thread *cur = thread_current();
@@ -234,7 +234,7 @@ thread_create (const char *name, int priority,
 			thread_yield();
 		}
 	}
-	
+	print_all_list();
 	return tid;
 }
 
@@ -345,7 +345,6 @@ thread_set_priority (int new_priority) {
 	/*TODO : thread의 우선순위가 변경되었을때 우선순위에 따라
 			 선점이 발생하게함
 			*/
-
 	// DONE BY suyeon
 	test_max_priority();
 }
@@ -698,4 +697,13 @@ bool cmp_priority(const struct list_elem *a, const struct list_elem *b, void *au
 	struct thread *former = list_entry(a, struct thread, elem);
 	struct thread *latter = list_entry(b, struct thread, elem);
 	return former->priority > latter->priority;
+}
+
+
+void print_all_list(void) {
+	struct thread *head = list_entry(list_begin(&ready_list), struct thread, elem);
+	while (&head->elem != list_end(&ready_list)) {
+		printf("head->priority=%d", head->priority);
+		head = head->elem.next;
+	}
 }

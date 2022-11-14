@@ -52,7 +52,7 @@ run_test (const char *name)
     if (!strcmp (name, t->name))
       {
         test_name = name;
-        msg ("begin");
+        msg ("beginnnnn");
         t->function ();
         msg ("end");
         return;
