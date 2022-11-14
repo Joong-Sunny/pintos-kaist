@@ -229,8 +229,8 @@ thread_create (const char *name, int priority,
 	struct thread *cur = thread_current();
 	
 	if (!list_empty(&ready_list)){
-		if (cur->priority <= t->priority) {
-		// if (!cmp_priority(cur, t, NULL)){
+		// if (cur->priority <= t->priority) {
+		if (!cmp_priority(&(cur->elem), &(t->elem), NULL)){
 			thread_yield();
 		}
 	}
@@ -682,7 +682,7 @@ void test_max_priority(void){
 	// ready_list가 비어있지 않은지 확인
 	// Done by suyeon
 	if(!list_empty(&ready_list)) {
-		if (!cmp_priority(thread_current(), list_entry(list_begin(&ready_list), struct thread, elem), NULL)) {
+		if (!cmp_priority(&(thread_current()->elem), &(list_entry(list_begin(&ready_list), struct thread, elem)->elem), NULL)) {
 			/*현재쓰레드.priority <= readylist의 첫번째*/
 			thread_yield();
 		}
