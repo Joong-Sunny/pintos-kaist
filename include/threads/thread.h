@@ -100,6 +100,13 @@ struct thread {
 	int64_t wakeup_tick;
 	/*TBD done*/
 
+	/*TBD chobae 3. donation 추가된 선언 */
+	int init_priority;	// dontaion 이후 우선순위를 초기화하기 위해 초기값 저장
+	struct lock *wait_on_lock;	// 해당 스레드가 대기 하고 있는 lock 자료 구조의 주소를 저장
+	struct list donations;	// multiple donation을 고려하기 위해 사용
+	struct list_elem donation_elem;	// multiple donation을 고려하기 위해 사용
+	/*TBO DONE*/
+
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */
@@ -159,4 +166,11 @@ int64_t get_next_tick_to_awake(void);	// thread.c의 next_tick_to_awake 반환
 void test_max_priority(void);	// 현재 실행중인 스레드와 가장 높은 우선순위의 스레드의 우선순위를 비교하여 스케줄링
 bool cmp_priority(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED);	// 인자로 주어진 스레드들의 우선순위를 비교
 /*TBD DONE*/
+
+/*TBD chobae: 3. donation 추가된 함수*/
+void donate_priority(void);
+void remove_with_lock(struct lock *lock);
+void refresh_priority(void);
+/*TBD DONE*/
+
 #endif /* threads/thread.h */
