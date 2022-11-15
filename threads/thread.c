@@ -448,8 +448,12 @@ init_thread (struct thread *t, const char *name, int priority) {
 	strlcpy (t->name, name, sizeof t->name);
 	t->tf.rsp = (uint64_t) t + PGSIZE - sizeof (void *);
 	t->priority = priority;
+	/*TBD everyone */
+	t->init_priority = priority;
+	/*TBD DONE*/
 	t->magic = THREAD_MAGIC;
-	/*TODO: priority donatiom 관련 자료구조 초기화*/
+
+	
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should
@@ -713,12 +717,36 @@ void donate_priority(void)	{
 	   현재 스레드의 우선순위를 lock을 보유하고 있는 스레드에게 기부한다.
 	   (Nested donation 그림 참고, nested depth 는 8로 제한)
 	*/
+	
+	//TBD: 낮을리는 없겠지만 혹시 모르니까, 나보다 낮은 녀석이 key를 들고 있는 경우에 대해 assert심어두기
+	struct list lock_hunters = thread_current()->wait_on_lock->semaphore.waiters;  //  현재 스레드가 기다리고 있는 lock과 연결된 모든 스레드들
+	struct list_elem *head = list_begin(&lock_hunters);
+	int curr_priority = thread_current()->priority;
+
+	while (head != list_end(&lock_hunters)) {
+		// TBD nested depth 는 8로 제한
+		int hunter_priority = list_entry(head, struct thread, elem)->priority;
+		if (hunter_priority < curr_priority){
+			list_entry(head, struct thread, elem)->priority = curr_priority; //기부 ㄱ
+		}
+		head = head->next;
+	}
+	
 }
 
 void remove_with_lock(struct lock *lock)	{
+	//정말정말 해당 자원을 아무도 안쓸 때 실행될 함수?(추측)
+
 	/* lock을 해지 했을때 donations 리스트에서 해당 엔트리를 삭제하기 위한 함수를 구현한다
 	   현재 스레드의 donations 리스트를 확인하여 해지할 lock을 보유하고 있는 엔트리를 삭제
 	*/
+	// list_remove(lock->holder->donation_elem);
+
+	// 1. 나에게 도네이트를 해주신 분들이 (A, B, C, D, E)가 있다.
+	// 2. 나는 remove_with_lock(special_lock)을 해제하고자 한다.
+	// 3. (A, B, C, D, E)
+
+	
 }
 
 void refresh_priority(void)	{
