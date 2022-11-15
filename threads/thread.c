@@ -666,7 +666,7 @@ void thread_awake(int64_t wakeup_tick){
 
 
 void update_next_tick_to_awake(int64_t ticks){
-	if (next_tick_to_awake < ticks)
+	if (next_tick_to_awake > ticks)
 		next_tick_to_awake = ticks;
 }
 
