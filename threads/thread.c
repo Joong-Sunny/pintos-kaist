@@ -692,7 +692,7 @@ int64_t get_next_tick_to_awake(void){
 /* TODO : 현재 실행중인 스레드와 가장 높은 우선순위의 스레드의 우선순위를 비교하여 스케줄링*/
 void test_max_priority(void){
 	// ready_list가 비어있지 않은지 확인
-	// Done by suyeon
+
 	if(!list_empty(&ready_list)) {
 		if (!cmp_priority(&(thread_current()->elem), &(list_entry(list_begin(&ready_list), struct thread, elem)->elem), NULL)) {
 			/*현재쓰레드.priority <= readylist의 첫번째*/
@@ -728,20 +728,23 @@ void donate_priority(void)	{
 	int curr_priority = thread_current()->priority;
 	
 	/*for the nested loop (줄줄이 사탕으로 전부 끌어올린다) */
-	struct thread *twlh = thread_current()->wait_on_lock->holder; //twlh = Target_Wait_on_Lock_Holder
-	twlh->priority = curr_priority;
-	
-	if (twlh) {
-		for (int i = 0; i < 8; ++i) {		
-			if ( (twlh->wait_on_lock == NULL) || (twlh->wait_on_lock->holder == NULL) )
-				// <찐키주인이 기다리는락이 없음>    or   <찐키주인이 기다리는락이 주인없음(였던것..)>
-				break;
+	if (thread_current()->wait_on_lock && thread_current()->wait_on_lock->holder) {
+		struct thread *twlh = thread_current()->wait_on_lock->holder; //twlh = Target_Wait_on_Lock_Holder
+		twlh->priority = curr_priority;
+		
+		if (twlh) {
+			for (int i = 0; i < 8; ++i) {		
+				if ( (twlh->wait_on_lock == NULL) || (twlh->wait_on_lock->holder == NULL) )
+					// <찐키주인이 기다리는락이 없음>    or   <찐키주인이 기다리는락이 주인없음(였던것..)>
+					break;
 
-		twlh->wait_on_lock->holder->priority = curr_priority;
-		// list_insert_ordered(&(twlh->wait_on_lock->holder->donations), &(thread_current()->donation_elem), cmp_delem_priority, NULL);
-		twlh = twlh->wait_on_lock->holder;
-		}
-	}	
+			twlh->wait_on_lock->holder->priority = curr_priority;
+			// list_insert_ordered(&(twlh->wait_on_lock->holder->donations), &(thread_current()->donation_elem), cmp_delem_priority, NULL);
+			twlh = twlh->wait_on_lock->holder;
+			}
+		}	
+	}
+
 }
 
 /* 나(current_thread)의 donations에서  내가들고있던 Lock을 원하셨던 분들 제거 */
@@ -776,11 +779,9 @@ void refresh_priority(void)	{
 	}
 	else{
 		/*도네있으면, 그중 최고*/
-		// list_sort (&(thread_current()->donations), cmp_delem_priority, NULL); //TBD: 혹시몰라 정렬, 정렬 없애도 잘 돌아가면 없애도 됨(최적화)	
-		
 		thread_current()->priority = MAX(
 			thread_current()->init_priority,
 			list_entry( list_begin(&(thread_current()->donations)), struct thread, donation_elem )->priority // <===이거 init_priority가 되어야하지 않을까??? (sunny추측)
 		);
-	}	
+	}
 }
