@@ -354,6 +354,7 @@ thread_set_priority (int new_priority) {
 
 	refresh_priority();   
 	donate_priority();
+
 	// DONE BY suyeon
 	test_max_priority();
 }
@@ -728,9 +729,9 @@ void donate_priority(void)	{
 			if ( (twlh->wait_on_lock == NULL) || (twlh->wait_on_lock->holder == NULL) )
 				// <찐키주인이 기다리는락이 없음>    or   <찐키주인이 기다리는락이 주인없음(였던것..)>
 				break;
-		//자신감 90
+
 		twlh->wait_on_lock->holder->priority = curr_priority;
-		list_insert_ordered(&(twlh->wait_on_lock->holder->donations), &(thread_current()->donation_elem), cmp_priority, NULL);
+		// list_insert_ordered(&(twlh->wait_on_lock->holder->donations), &(thread_current()->donation_elem), cmp_priority, NULL);
 		twlh = twlh->wait_on_lock->holder;
 		}
 	}	
