@@ -240,8 +240,11 @@ lock_release (struct lock *lock) {
 	ASSERT (lock_held_by_current_thread (lock));
 
 	lock->holder = NULL;
-	remove_with_lock(lock);
-	refresh_priority();
+	if(list_empty(& (thread_current()->donations))) //TBD: sunny added
+	{
+		remove_with_lock(lock);
+		refresh_priority();
+	}
 	sema_up (&lock->semaphore);
 }
 
