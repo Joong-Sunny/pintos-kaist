@@ -198,7 +198,7 @@ lock_acquire (struct lock *lock) {
 	if (lock->holder){
 		thread_current()->wait_on_lock = lock;
 		// TBD: multiple 코드 구현
-		list_insert_ordered(&(lock->holder->donations), &(thread_current()->donation_elem), cmp_priority, NULL);
+		list_insert_ordered(&(lock->holder->donations), &(thread_current()->donation_elem), cmp_delem_priority, NULL);
 		donate_priority();
 	}
 	

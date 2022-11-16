@@ -354,8 +354,6 @@ thread_set_priority (int new_priority) {
 
 	refresh_priority();   
 	donate_priority();
-
-	// DONE BY suyeon
 	test_max_priority();
 }
 
@@ -714,6 +712,15 @@ bool cmp_priority(const struct list_elem *a, const struct list_elem *b, void *au
 	return former->priority > latter->priority;
 }
 
+bool cmp_delem_priority(const struct list_elem *a, const struct list_elem *b, void *aux UNUSED)	{
+	/*list_insert_ordered에서 사용할 함수. a > b 이면 true 를 리턴해야 한다 */
+
+	struct thread *former = list_entry(a, struct thread, donation_elem);
+	struct thread *latter = list_entry(b, struct thread, donation_elem);
+	return former->priority > latter->priority;
+}
+
+
 
 /*lock의 홀더에게 donate, 그리고 나를 그들의 Donations에 넣어줌 */ 
 void donate_priority(void)	{
@@ -731,7 +738,7 @@ void donate_priority(void)	{
 				break;
 
 		twlh->wait_on_lock->holder->priority = curr_priority;
-		// list_insert_ordered(&(twlh->wait_on_lock->holder->donations), &(thread_current()->donation_elem), cmp_priority, NULL);
+		// list_insert_ordered(&(twlh->wait_on_lock->holder->donations), &(thread_current()->donation_elem), cmp_delem_priority, NULL);
 		twlh = twlh->wait_on_lock->holder;
 		}
 	}	
@@ -769,7 +776,7 @@ void refresh_priority(void)	{
 	}
 	else{
 		/*도네있으면, 그중 최고*/
-		list_sort (&(thread_current()->donations), cmp_priority, NULL); //TBD: 혹시몰라 정렬, 정렬 없애도 잘 돌아가면 없애도 됨(최적화)	
+		// list_sort (&(thread_current()->donations), cmp_delem_priority, NULL); //TBD: 혹시몰라 정렬, 정렬 없애도 잘 돌아가면 없애도 됨(최적화)	
 		
 		thread_current()->priority = MAX(
 			thread_current()->init_priority,
