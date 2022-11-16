@@ -195,23 +195,12 @@ lock_acquire (struct lock *lock) {
 	ASSERT (!intr_context ());
 	ASSERT (!lock_held_by_current_thread (lock));
 
-	//holder가 있으면
-		//1. 나는 현재 락을 기다릴게(wait_on_lock)
-		//2. 나는 wait_list에서 기다릴게(X) <- sema_dow에서 해줌
-		//3. 나는 lock_holder의 donations에 나를 저장할게
-																	//4. (번외)semadown하지 않고 나감
-																	//holder가 없으면
-	//1. 그냥 준다. 그리고 실행한다
-		//a. 세마다운
-		//b. wait_on_lock = NULL
-		//c. lock_holder은 이제 나임!
-	//2. lock을 얻은 나, wait list에서 기다리던 나는 잊어주세요~~
-
 	if (lock->holder){
 		thread_current()->wait_on_lock = lock;
+		// TBD: multiple 코드 구현
 		donate_priority();
 	}
-
+	
 	sema_down (&lock->semaphore);  //TBD: why sema_down earlier??
 	thread_current()->wait_on_lock = NULL; //OYES added
 	lock->holder = thread_current();
@@ -253,9 +242,9 @@ lock_release (struct lock *lock) {
 	lock->holder = NULL;
 	// if( !list_empty(& (thread_current()->donations))) //TBD: 최적화
 
-	remove_with_lock(lock); 	//나(current_thread)의 donations에서  내가들고있던 Lock을 원하셨던 분들 제거
-	refresh_priority();			// 도네가 없다면, 본인 pr을, 도네가 있다면 그중 최고로변경!!
-	sema_up (&lock->semaphore); //다 됐다.. 들어와라
+	remove_with_lock(lock); 	
+	refresh_priority();			
+	sema_up (&lock->semaphore);
 }
 
 /* Returns true if the current thread holds LOCK, false
