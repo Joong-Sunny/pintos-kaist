@@ -26,6 +26,8 @@
    Do not modify this value. */
 #define THREAD_BASIC 0xd42df210
 
+#define MAX(a,b) (a > b ? a : b)
+
 /* List of processes in THREAD_READY state, that is, processes
    that are ready to run but not actually running. */
 static struct list ready_list;
@@ -341,15 +343,17 @@ thread_yield (void) {
 /* Sets the current thread's priority to NEW_PRIORITY. */
 void
 thread_set_priority (int new_priority) {
-	thread_current ()->priority = new_priority;
+
+	thread_current ()-> init_priority = new_priority;
 	/*TODO : donation을 고려하여 thread_set_priority() 함수를 수정한다
 
-			 refresh_priority() 함수를 사용하여 우선순위 변경으로 인한 donaiton 관련정보 갱신
-			 
-			 donation_priority(), test_max_priority() 함수를 적절히 사용하여 priority donation을 수행하고 스케줄링한다.
+			refresh_priority() 함수를 사용하여 우선순위 변경으로 인한 donation 관련정보 갱신
+			donation_priority(), test_max_priority() 함수를 적절히 사용하여 priority donation을 수행하고 스케줄링한다.
 	 
 	*/
 
+	refresh_priority();   
+	donate_priority();
 	// DONE BY suyeon
 	test_max_priority();
 }
@@ -770,8 +774,6 @@ void remove_with_lock(struct lock *lock)	{
 			}
 		head = head->next;
 	}
-	// 3-4. 만약 일치한다면, donation_list에서 해당 녀석을 삭제
-	
 	// 3-x. (줄어든 donation_list에서, 최대값(priority)를 찾아...) <= 이건 refresh_priority에서 to be continue...
 }
 
@@ -783,4 +785,18 @@ void refresh_priority(void)	{
 	   가장 우선순위가 높은 donations 리스트의 스레드와 현재 스레드의 우선순위를 비교해 높은 값을 
 	   현재 스레드의 우선순위로 설정
 	*/
+
+	if ( list_empty( &(thread_current()->donations)) ){
+		thread_current()->priority = thread_current()->init_priority;
+	}
+	else{
+		list_sort (&(thread_current()->donations), cmp_priority, NULL); //TBD: 혹시몰라 정렬, 정렬 없애도 잘 돌아가면 없애도 됨(최적화)	
+		// thread_current()->priority =  list_entry( list_begin(&(thread_current()->donations)), struct thread, elem )->priority;
+		thread_current()->priority = MAX(
+			thread_current()->init_priority,
+			list_entry( list_begin(&(thread_current()->donations)), struct thread, elem )->priority
+		);
+	}	
+
+
 }
