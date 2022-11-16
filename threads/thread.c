@@ -718,12 +718,12 @@ bool cmp_priority(const struct list_elem *a, const struct list_elem *b, void *au
 void donate_priority(void)	{
 
 	//TBD: 낮을리는 없겠지만 혹시 모르니까, 나보다 낮은 녀석이 key를 들고 있는 경우에 대해 assert심어두기
-	struct list lock_hunters = thread_current()->wait_on_lock->semaphore.waiters;  //  현재 스레드가 기다리고 있는 lock과 연결된 모든 스레드들
-	struct list_elem *head = list_begin(&lock_hunters);
+	// struct list lock_hunters = thread_current()->wait_on_lock->semaphore.waiters;  //  현재 스레드가 기다리고 있는 lock과 연결된 모든 스레드들
+	// struct list_elem *head = list_begin(&lock_hunters);
 	int curr_priority = thread_current()->priority;
 
 	thread_current()->wait_on_lock->holder->priority = curr_priority; //(donate완료) "holder야.. 힘을 줄게..빨리 끝내라"
-	list_insert_ordered(&lock_hunters, &(thread_current()->elem) , cmp_priority, NULL ); // "holder야.. 나도이제 hunter모드로 널 기다린다"
+	// list_insert_ordered(&lock_hunters, &(thread_current()->elem) , cmp_priority, NULL ); // "holder야.. 나도이제 hunter모드로 널 기다린다"
 
 
 	/*for the nested loop (줄줄이 사탕으로 전부 끌어올린다) */

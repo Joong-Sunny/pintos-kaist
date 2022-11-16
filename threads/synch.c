@@ -197,7 +197,7 @@ lock_acquire (struct lock *lock) {
 
 	//holder가 있으면
 		//1. 나는 현재 락을 기다릴게(wait_on_lock)
-		//2. 나는 wait_list에서 기다릴게
+		//2. 나는 wait_list에서 기다릴게(X) <- sema_dow에서 해줌
 		//3. 나는 lock_holder의 donations에 나를 저장할게
 																	//4. (번외)semadown하지 않고 나감
 																	//holder가 없으면
@@ -209,19 +209,12 @@ lock_acquire (struct lock *lock) {
 
 	if (lock->holder){
 		thread_current()->wait_on_lock = lock;
-		list_insert_ordered(&(lock->semaphore.waiters), &(thread_current()->elem), cmp_priority, NULL );
 		donate_priority();
 	}
 
 	sema_down (&lock->semaphore);  //TBD: why sema_down earlier??
 	thread_current()->wait_on_lock = NULL; //OYES added
 	lock->holder = thread_current();
-	
-	// list_remove(&(lock->semaphore.waiters)); 에서 어떻게 제거;;;
-	// TBD: 자신감 40
-	if(!list_empty(&(lock->semaphore.waiters))) //방어?
-		list_pop_front(&(lock->semaphore.waiters));
-
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
