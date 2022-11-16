@@ -187,7 +187,7 @@ lock_init (struct lock *lock) {
    interrupts disabled, but interrupts will be turned back on if
    we need to sleep. */
 void
-lock_acquire (struct lock *lock) {
+lock_acquire (struct lock *lock) {//현재 실행중인 thread에게 lock을 주는 함수!!(너 이제 써!!)
 	ASSERT (lock != NULL);
 	ASSERT (!intr_context ());
 	ASSERT (!lock_held_by_current_thread (lock));
@@ -199,10 +199,14 @@ lock_acquire (struct lock *lock) {
 	   *multiple donation을 고려하기 위해 이전 상태의 우선순위를 기억,
 	   donation을 받은 스레드의 thread 구조체를 List로 관리한다.
 	*/
+	if (lock->holder){
+		thread_current()->wait_on_lock = lock;
+		donate_priority();
+	}
 
-	sema_down (&lock->semaphore);
-	lock->holder = thread_current ();
-
+	sema_down (&lock->semaphore);  //TBD: why sema_down earlier??
+	thread_current()->wait_on_lock = NULL; //OYES added
+	lock->holder = thread_current();
 	/* TODO : lock을 획득 한 후 lock holder를 갱신한다. */
 }
 
@@ -237,7 +241,11 @@ lock_release (struct lock *lock) {
 	ASSERT (lock_held_by_current_thread (lock));
 
 	lock->holder = NULL;
-	/*TODO : remove_with_lock() , refresh_priority 추가*/
+	// if( !list_empty(& (thread_current()->donations))) //TBD: 최적화
+	// {
+	remove_with_lock(lock);
+	refresh_priority();		
+	// }
 	sema_up (&lock->semaphore);
 }
 
@@ -250,7 +258,7 @@ lock_held_by_current_thread (const struct lock *lock) {
 
 	return lock->holder == thread_current ();
 }
-
+
 /* One semaphore in a list. */
 struct semaphore_elem {
 	struct list_elem elem;              /* List element. */

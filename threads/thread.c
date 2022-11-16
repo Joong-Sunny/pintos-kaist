@@ -448,8 +448,12 @@ init_thread (struct thread *t, const char *name, int priority) {
 	strlcpy (t->name, name, sizeof t->name);
 	t->tf.rsp = (uint64_t) t + PGSIZE - sizeof (void *);
 	t->priority = priority;
+	/*TBD everyone */
+	t->init_priority = priority;
+	/*TBD DONE*/
 	t->magic = THREAD_MAGIC;
-	/*TODO: priority donatiom 관련 자료구조 초기화*/
+	t->wait_on_lock = NULL;
+	list_init(&t->donations);
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should
@@ -713,12 +717,62 @@ void donate_priority(void)	{
 	   현재 스레드의 우선순위를 lock을 보유하고 있는 스레드에게 기부한다.
 	   (Nested donation 그림 참고, nested depth 는 8로 제한)
 	*/
+	
+	//TBD: 낮을리는 없겠지만 혹시 모르니까, 나보다 낮은 녀석이 key를 들고 있는 경우에 대해 assert심어두기
+	struct list lock_hunters = thread_current()->wait_on_lock->semaphore.waiters;  //  현재 스레드가 기다리고 있는 lock과 연결된 모든 스레드들
+	struct list_elem *head = list_begin(&lock_hunters);
+	int curr_priority = thread_current()->priority;
+
+	thread_current()->wait_on_lock->holder->priority = curr_priority; //(donate완료) "holder야.. 힘을 줄게..빨리 끝내라"
+	list_insert_ordered(&lock_hunters, &(thread_current()->elem) , cmp_priority, NULL ); // "holder야.. 나도이제 hunter모드로 널 기다린다"
+
+
+	// thread_current()->wait_on_lock->holder->wait_on_lock == null?
+	struct thread *twlh = thread_current()->wait_on_lock->holder; //twlh = Target_Wait_on_Lock_Holder
+	if (twlh) { 
+		for (int i = 0; i < 8; ++i) {
+			if ((twlh->wait_on_lock == NULL) || (twlh->wait_on_lock->holder == NULL))  {
+				break;
+			}
+		
+		//그때마다 도네
+		twlh->wait_on_lock->holder->priority = curr_priority;
+		}
+	}	
 }
 
+/* lock을 해지 했을때 donations 리스트에서 해당 엔트리를 삭제하기 위한 함수를 구현한다
+	현재 스레드의 donations 리스트를 확인하여 해지할 lock을 보유하고 있는 엔트리를 삭제
+*/
 void remove_with_lock(struct lock *lock)	{
-	/* lock을 해지 했을때 donations 리스트에서 해당 엔트리를 삭제하기 위한 함수를 구현한다
-	   현재 스레드의 donations 리스트를 확인하여 해지할 lock을 보유하고 있는 엔트리를 삭제
-	*/
+	//정말정말 해당 자원을 아무도 안쓸 때 실행될 함수?(추측)
+
+	// list_remove(lock->holder->donation_elem);
+
+	// 1. 나에게 도네이트를 해주신 분들이 (A, B, C, D, E)가 있다.
+	// 2. 나는 remove_with_lock(special_lock)을 해제하고자 한다.
+	// 3. (A, B, C, D, E)중 lock을 준 쓰레드를 찾는다. 해당 쓰레드를 지운다.
+
+
+	// coding logic
+	// 3-1. current_thread().donation_list를 본다
+	struct list_elem *head = list_begin( &(thread_current()->donations) );
+	struct thread *curr;
+	// 3-2. donation_list에서, 순회를 한다
+	while(head != list_end( &(thread_current()->donations) )){
+		//3-3. "모~든 리스트"를 순회하며 if (wait_on_lock == lock)을 확인
+			//(1) head(elem임)로부터 쓰레드를 찾는다
+			curr = list_entry(head, struct thread, elem);
+			//(2) 찾은 쓰레드의 wait_on_lock == lock인지 확인한다
+			if (curr->wait_on_lock == lock){
+				//(3) donations에서 삭제
+				list_remove( &(curr->elem) );
+			}
+		head = head->next;
+	}
+	// 3-4. 만약 일치한다면, donation_list에서 해당 녀석을 삭제
+	
+	// 3-x. (줄어든 donation_list에서, 최대값(priority)를 찾아...) <= 이건 refresh_priority에서 to be continue...
 }
 
 void refresh_priority(void)	{
