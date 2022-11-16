@@ -31,12 +31,17 @@ test_priority_donate_one (void)
 
   lock_init (&lock);
   lock_acquire (&lock);
+  msg ("=DG1=\n");
   thread_create ("acquire1", PRI_DEFAULT + 1, acquire1_thread_func, &lock);
+  msg ("=DG2=\n");
   msg ("This thread should have priority %d.  Actual priority: %d.",
        PRI_DEFAULT + 1, thread_get_priority ());
+  msg ("=DG3=\n");
   thread_create ("acquire2", PRI_DEFAULT + 2, acquire2_thread_func, &lock);
+  msg ("=DG4=\n");
   msg ("This thread should have priority %d.  Actual priority: %d.",
        PRI_DEFAULT + 2, thread_get_priority ());
+  msg ("=DG5=\n");
   lock_release (&lock);
   msg ("acquire2, acquire1 must already have finished, in that order.");
   msg ("This should be the last line before finishing this test.");
@@ -46,9 +51,10 @@ static void
 acquire1_thread_func (void *lock_) 
 {
   struct lock *lock = lock_;
-
+  msg ("===trying to aquire===\n");
   lock_acquire (lock);
   msg ("acquire1: got the lock");
+  msg ("===trying to release===\n");
   lock_release (lock);
   msg ("acquire1: done");
 }

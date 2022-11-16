@@ -186,28 +186,42 @@ lock_init (struct lock *lock) {
    interrupt handler.  This function may be called with
    interrupts disabled, but interrupts will be turned back on if
    we need to sleep. */
+
+/* 현재 실행중인 thread가 lock을 요청하는 함수(+lock 얻을수도..?) */
 void
-lock_acquire (struct lock *lock) {//현재 실행중인 thread에게 lock을 주는 함수!!(너 이제 써!!)
+lock_acquire (struct lock *lock) {
+	
 	ASSERT (lock != NULL);
 	ASSERT (!intr_context ());
 	ASSERT (!lock_held_by_current_thread (lock));
-	/* TODO :
-	   해당 lock의 holder가 존재한다면 아래 작업을 수행한다.
-	   현재 스레드의 wait_on_lock 변수에 획득 하기를 기다리는 lock의 주소를 저장
-	   priority donation 수행하기 위해 donate_priority() 함수 호출
 
-	   *multiple donation을 고려하기 위해 이전 상태의 우선순위를 기억,
-	   donation을 받은 스레드의 thread 구조체를 List로 관리한다.
-	*/
+	//holder가 있으면
+		//1. 나는 현재 락을 기다릴게(wait_on_lock)
+		//2. 나는 wait_list에서 기다릴게
+		//3. 나는 lock_holder의 donations에 나를 저장할게
+																	//4. (번외)semadown하지 않고 나감
+																	//holder가 없으면
+	//1. 그냥 준다. 그리고 실행한다
+		//a. 세마다운
+		//b. wait_on_lock = NULL
+		//c. lock_holder은 이제 나임!
+	//2. lock을 얻은 나, wait list에서 기다리던 나는 잊어주세요~~
+
 	if (lock->holder){
 		thread_current()->wait_on_lock = lock;
+		list_insert_ordered(&(lock->semaphore.waiters), &(thread_current()->elem), cmp_priority, NULL );
 		donate_priority();
 	}
 
 	sema_down (&lock->semaphore);  //TBD: why sema_down earlier??
 	thread_current()->wait_on_lock = NULL; //OYES added
 	lock->holder = thread_current();
-	/* TODO : lock을 획득 한 후 lock holder를 갱신한다. */
+	
+	// list_remove(&(lock->semaphore.waiters)); 에서 어떻게 제거;;;
+	// TBD: 자신감 40
+	if(!list_empty(&(lock->semaphore.waiters))) //방어?
+		list_pop_front(&(lock->semaphore.waiters));
+
 }
 
 /* Tries to acquires LOCK and returns true if successful or false
@@ -235,18 +249,20 @@ lock_try_acquire (struct lock *lock) {
    An interrupt handler cannot acquire a lock, so it does not
    make sense to try to release a lock within an interrupt
    handler. */
+
+/* 점유되고 있는 자원을 놓아주면 끝! */
 void
 lock_release (struct lock *lock) {
+
 	ASSERT (lock != NULL);
 	ASSERT (lock_held_by_current_thread (lock));
 
 	lock->holder = NULL;
 	// if( !list_empty(& (thread_current()->donations))) //TBD: 최적화
-	// {
-	remove_with_lock(lock);
-	refresh_priority();		
-	// }
-	sema_up (&lock->semaphore);
+
+	remove_with_lock(lock); 	//나(current_thread)의 donations에서  내가들고있던 Lock을 원하셨던 분들 제거
+	refresh_priority();			// 도네가 없다면, 본인 pr을, 도네가 있다면 그중 최고로변경!!
+	sema_up (&lock->semaphore); //다 됐다.. 들어와라
 }
 
 /* Returns true if the current thread holds LOCK, false

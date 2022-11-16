@@ -714,14 +714,9 @@ bool cmp_priority(const struct list_elem *a, const struct list_elem *b, void *au
 }
 
 
-/*TODO : 3. Donation 추가 함수 */
+/*lock의 홀더에게 donate, 그리고 나를 그들의 Donations에 넣어줌 */ 
 void donate_priority(void)	{
-	/* priority donation을 수행하는 함수를 구현한다
-	   현재 스레드가 기다리고 있는 lock과 연결된 모든 스레드들을 순회하며,
-	   현재 스레드의 우선순위를 lock을 보유하고 있는 스레드에게 기부한다.
-	   (Nested donation 그림 참고, nested depth 는 8로 제한)
-	*/
-	
+
 	//TBD: 낮을리는 없겠지만 혹시 모르니까, 나보다 낮은 녀석이 key를 들고 있는 경우에 대해 assert심어두기
 	struct list lock_hunters = thread_current()->wait_on_lock->semaphore.waiters;  //  현재 스레드가 기다리고 있는 lock과 연결된 모든 스레드들
 	struct list_elem *head = list_begin(&lock_hunters);
@@ -731,31 +726,32 @@ void donate_priority(void)	{
 	list_insert_ordered(&lock_hunters, &(thread_current()->elem) , cmp_priority, NULL ); // "holder야.. 나도이제 hunter모드로 널 기다린다"
 
 
-	// thread_current()->wait_on_lock->holder->wait_on_lock == null?
+	/*for the nested loop (줄줄이 사탕으로 전부 끌어올린다) */
 	struct thread *twlh = thread_current()->wait_on_lock->holder; //twlh = Target_Wait_on_Lock_Holder
 	if (twlh) { 
 		for (int i = 0; i < 8; ++i) {
 			if ((twlh->wait_on_lock == NULL) || (twlh->wait_on_lock->holder == NULL))  {
 				break;
 			}
-		
-		//그때마다 도네
+
+		//(TBD: 자신감 70%)
+		// 1.그때마다 도네
 		twlh->wait_on_lock->holder->priority = curr_priority;
+		// 2. donations에 나를 기록(TBD: 정렬해서 삽입해야하는지 확실히 이해하기(아니여도 되지 않을까??))
+		list_insert_ordered(&(twlh->wait_on_lock->holder->donations), &(thread_current()->elem), cmp_priority, NULL);
+		// 3. 다음 twlh로 이동
+		twlh = twlh->wait_on_lock->holder;
 		}
 	}	
 }
 
-/* lock을 해지 했을때 donations 리스트에서 해당 엔트리를 삭제하기 위한 함수를 구현한다
-	현재 스레드의 donations 리스트를 확인하여 해지할 lock을 보유하고 있는 엔트리를 삭제
-*/
+/* 나(current_thread)의 donations에서  내가들고있던 Lock을 원하셨던 분들 제거 */
 void remove_with_lock(struct lock *lock)	{
-	//정말정말 해당 자원을 아무도 안쓸 때 실행될 함수?(추측)
 
 	// list_remove(lock->holder->donation_elem);
-
 	// 1. 나에게 도네이트를 해주신 분들이 (A, B, C, D, E)가 있다.
 	// 2. 나는 remove_with_lock(special_lock)을 해제하고자 한다.
-	// 3. (A, B, C, D, E)중 lock을 준 쓰레드를 찾는다. 해당 쓰레드를 지운다.
+	// 3. (A, B, C, D, E)중 special_lock을 준 쓰레드를 찾는다. 해당 쓰레드를 지운다.
 
 
 	// coding logic
@@ -777,26 +773,21 @@ void remove_with_lock(struct lock *lock)	{
 	// 3-x. (줄어든 donation_list에서, 최대값(priority)를 찾아...) <= 이건 refresh_priority에서 to be continue...
 }
 
+
+/* 도네가 없다면, 본인 pr을, 도네가 있다면 그중 최고로변경!!! */
 void refresh_priority(void)	{
-	/* 스레드의 우선순위가 변경 되었을때 donation 을 고려하여 우선순위를 다시 결정하는 함수를 구성한다.
 
-	   현재 스레드의 우선순위를 기부받기 전의 우선순위로 변경
-
-	   가장 우선순위가 높은 donations 리스트의 스레드와 현재 스레드의 우선순위를 비교해 높은 값을 
-	   현재 스레드의 우선순위로 설정
-	*/
-
-	if ( list_empty( &(thread_current()->donations)) ){
+	if ( list_empty( &(thread_current()->donations)) ){ 
+		/*도네없으면, 본인pr = 본인init */
 		thread_current()->priority = thread_current()->init_priority;
 	}
 	else{
+		/*도네있으면, 그중 최고*/
 		list_sort (&(thread_current()->donations), cmp_priority, NULL); //TBD: 혹시몰라 정렬, 정렬 없애도 잘 돌아가면 없애도 됨(최적화)	
-		// thread_current()->priority =  list_entry( list_begin(&(thread_current()->donations)), struct thread, elem )->priority;
+		
 		thread_current()->priority = MAX(
 			thread_current()->init_priority,
-			list_entry( list_begin(&(thread_current()->donations)), struct thread, elem )->priority
+			list_entry( list_begin(&(thread_current()->donations)), struct thread, elem )->priority // <===이거 init_priority가 되어야하지 않을까??? (sunny추측)
 		);
 	}	
-
-
 }
