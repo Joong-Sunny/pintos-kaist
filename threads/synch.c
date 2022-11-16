@@ -66,7 +66,8 @@ sema_down (struct semaphore *sema) {
 
 	old_level = intr_disable ();
 	while (sema->value == 0) {
-		list_insert_ordered (&sema->waiters, &thread_current ()->elem, cmp_sem_priority, NULL);
+		list_insert_ordered (&sema->waiters, &thread_current ()->elem, cmp_priority, NULL);
+
 		thread_block ();
 	}
 	sema->value--;
@@ -110,7 +111,7 @@ sema_up (struct semaphore *sema) {
 
 	old_level = intr_disable ();
 	if (!list_empty (&sema->waiters)) {
-		list_sort (&sema->waiters, cmp_sem_priority, NULL);
+		list_sort (&sema->waiters, cmp_priority, NULL);
 		thread_unblock (list_entry (list_pop_front (&sema->waiters),
 					struct thread, elem));
 	}
@@ -353,8 +354,10 @@ bool cmp_sem_priority (const struct list_elem *a, const struct list_elem *b, voi
 	struct semaphore_elem *sa = list_entry(a, struct semaphore_elem, elem); 
 	struct semaphore_elem *sb = list_entry(b, struct semaphore_elem, elem);
 
-	if (cmp_priority(&sa->elem, &sb->elem, NULL)) {
-		return 1;
-	}
-	return 0;
+	struct list_elem *sa_head = list_begin(&(sa->semaphore.waiters));
+	struct list_elem *sb_head = list_begin(&(sb->semaphore.waiters));
+
+	struct thread*sa_head_priority = list_entry(sa_head, struct thread, elem)->priority;
+	struct thread*sb_head_priority = list_entry(sb_head, struct thread, elem)->priority;
+	return sa_head_priority > sb_head_priority;
 }
