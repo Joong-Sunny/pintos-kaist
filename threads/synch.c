@@ -241,7 +241,7 @@ lock_release (struct lock *lock) {
 	ASSERT (lock_held_by_current_thread (lock));
 
 	lock->holder = NULL;
-	// if( !list_empty(& (thread_current()->donations))) //TBD: sunny added (최적화... 였던 것)
+	// if( !list_empty(& (thread_current()->donations))) //TBD: 최적화
 	// {
 	remove_with_lock(lock);
 	refresh_priority();		
