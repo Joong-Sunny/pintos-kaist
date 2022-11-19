@@ -98,6 +98,7 @@ struct thread {
 	
 	/*TBD sunny: awake할 tick 추가 (변수명_wakeup_tick)*/ 
 	int64_t wakeup_tick;
+	uint64_t pml4;
 	/*TBD done*/
 
 	/*TBD chobae 3. donation 추가된 선언 */

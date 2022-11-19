@@ -50,8 +50,12 @@ process_create_initd (const char *file_name) {
 		return TID_ERROR;
 	strlcpy (fn_copy, file_name, PGSIZE);
 
+	// TBD fn_copy 파싱 :  첫번째 공백 전까지의 문자열 파싱
+	char *next_ptr;
+	char *first_file_name = strtok_r(fn_copy, " ", &next_ptr);
+
 	/* Create a new thread to execute FILE_NAME. */
-	tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
+	tid = thread_create (first_file_name, PRI_DEFAULT, initd, fn_copy);
 	if (tid == TID_ERROR)
 		palloc_free_page (fn_copy);
 	return tid;
@@ -164,6 +168,8 @@ int
 process_exec (void *f_name) {
 	char *file_name = f_name;
 	bool success;
+	char **parse;
+	int count = -1;
 
 	/* We cannot use the intr_frame in the thread structure.
 	 * This is because when current thread rescheduled,
@@ -172,21 +178,74 @@ process_exec (void *f_name) {
 	_if.ds = _if.es = _if.ss = SEL_UDSEG;
 	_if.cs = SEL_UCSEG;
 	_if.eflags = FLAG_IF | FLAG_MBS;
+   // TBD : 레지스터, 스택에 적재 하기 위해 parsing 
+   char *token, *save_ptr;
+
+   for (token = strtok_r (f_name, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr)) {
+		parse[++count] = token;	// 자신감 70
+   }
+
 
 	/* We first kill the current context */
 	process_cleanup ();
 
 	/* And then load the binary */
 	success = load (file_name, &_if);
-
+	
 	/* If load failed, quit. */
 	palloc_free_page (file_name);
 	if (!success)
 		return -1;
 
+	// TBD : 
+	argument_stack(parse, count, &_if.rsp);
 	/* Start switched process. */
 	do_iret (&_if);
 	NOT_REACHED ();
+}
+void argument_stack(char **parse, int count, void **rsp) {
+	/* 프로그램 이름 및 인자(문자열) push */
+	/* 프로그램 이름 및 인자 주소들 push */
+	rsp = USER_STACK;
+	char **startings;
+	startings = (char **)calloc(0, sizeof(char *) * count);
+
+	int len = 0;
+
+	int i, j;
+	for(i = count - 1 ; i > -1 ; i--)
+	{
+		for(j = strlen(parse[i]) ; j > -1 ; j--)
+		{
+			*rsp = *rsp - 1;
+			**(char **)rsp = parse[i][j];
+		}
+		startings[len++] = rsp;
+	}
+	
+	// for word align
+	int diff = USER_STACK - (int)rsp;
+	int word_align = (((diff) + (8 - 1)) & ~0x7);
+	*rsp = *rsp - word_align;
+	// 자신감 1
+	*rsp = *rsp - sizeof(char *);
+
+	//  TODO: push last argv 
+	int idx = 0;
+	while (idx < len) {
+		*rsp = *rsp - sizeof(char *);
+		*(char *)rsp = startings[idx];
+		idx++;
+	}
+	// fake address
+	*rsp = *rsp - sizeof(char *);
+	*(char *)rsp = '\0';
+
+
+	/* argv (문자열을 가리키는 주소들의 배열을 가리킴) push*/
+	/* argc (문자열의 개수 저장) push */
+	/* fake address(0) 저장 */ 
+
 }
 
 
@@ -336,7 +395,7 @@ load (const char *file_name, struct intr_frame *if_) {
 	process_activate (thread_current ());
 
 	/* Open executable file. */
-	file = filesys_open (file_name);
+	file = filesys_open (file_name);   // file_name = cd 부터 끝까지
 	if (file == NULL) {
 		printf ("load: %s: open failed\n", file_name);
 		goto done;
@@ -637,3 +696,4 @@ setup_stack (struct intr_frame *if_) {
 	return success;
 }
 #endif /* VM */
+
