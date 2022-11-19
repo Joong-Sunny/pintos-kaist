@@ -199,6 +199,8 @@ process_exec (void *f_name) {
 
 	// TBD : 
 	argument_stack(parse, count, &_if.rsp);
+	hex_dump(_if.rsp , _if.rsp , KERN_BASE - _if.rsp ,true);
+
 	/* Start switched process. */
 	do_iret (&_if);
 	NOT_REACHED ();
@@ -227,8 +229,10 @@ void argument_stack(char **parse, int count, void **rsp) {
 	int diff = USER_STACK - (int)rsp;
 	int word_align = (((diff) + (8 - 1)) & ~0x7);
 	*rsp = *rsp - word_align;
+	
 	// 자신감 1
 	*rsp = *rsp - sizeof(char *);
+	*(char *)rsp = '\0';
 
 	//  TODO: push last argv 
 	int idx = 0;
@@ -240,7 +244,6 @@ void argument_stack(char **parse, int count, void **rsp) {
 	// fake address
 	*rsp = *rsp - sizeof(char *);
 	*(char *)rsp = '\0';
-
 
 	/* argv (문자열을 가리키는 주소들의 배열을 가리킴) push*/
 	/* argc (문자열의 개수 저장) push */
@@ -467,7 +470,7 @@ load (const char *file_name, struct intr_frame *if_) {
 	}
 
 	/* Set up stack. */
-	if (!setup_stack (if_))
+	if (!setup_stack (if_)) //set rsp = USERSTACK
 		goto done;
 
 	/* Start address. */
@@ -476,6 +479,7 @@ load (const char *file_name, struct intr_frame *if_) {
 	/* TODO: Your code goes here.
 	 * TODO: Implement argument passing (see project2/argument_passing.html). */
 
+	
 	success = true;
 
 done:
