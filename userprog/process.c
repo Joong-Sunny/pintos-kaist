@@ -50,12 +50,12 @@ process_create_initd (const char *file_name) {
 		return TID_ERROR;
 	strlcpy (fn_copy, file_name, PGSIZE);
 
-	// TBD fn_copy 파싱 :  첫번째 공백 전까지의 문자열 파싱
-	char *next_ptr;
-	char *first_file_name = strtok_r(fn_copy, " ", &next_ptr);
+	// // TBD fn_copy 파싱 :  첫번째 공백 전까지의 문자열 파싱
+	// char *next_ptr;
+	// char *first_file_name = strtok_r(fn_copy, " ", &next_ptr);
 
 	/* Create a new thread to execute FILE_NAME. */
-	tid = thread_create (first_file_name, PRI_DEFAULT, initd, fn_copy);
+	tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
 	if (tid == TID_ERROR)
 		palloc_free_page (fn_copy);
 	return tid;
@@ -166,6 +166,9 @@ error:
  * Returns -1 on fail. */
 int
 process_exec (void *f_name) {
+	printf("===DEBUG f_name is... %s ====\n", f_name);
+	// f_name에 
+	
 	char *file_name = f_name;
 	bool success;
 	char **parse;
@@ -182,21 +185,22 @@ process_exec (void *f_name) {
    char *token, *save_ptr;
 
 
-   for (token = strtok_r (f_name, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr)) {
-		count++;
+//    for (token = strtok_r (f_name, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr)) {
+// 		count++;
 
-		if (parse[count] == NULL || token == NULL) break;
+// 		if (parse[count] == NULL || token == NULL) break;
 
-        strlcpy(parse[count], token, sizeof(parse[count]));
+//         strlcpy(parse[count], token, sizeof(parse[count]));
 		
-		// parse[++count] = token;	// 자신감 70
-   }
+// 		// parse[++count] = token;	// 자신감 70
+//    }
 
 
 	/* We first kill the current context */
 	process_cleanup ();
 
 	/* And then load the binary */
+
 	success = load (file_name, &_if);
 	
 	/* If load failed, quit. */
@@ -205,11 +209,17 @@ process_exec (void *f_name) {
 		return -1;
 
 	// TBD : 
-	argument_stack(parse, count, &_if.rsp);
-	hex_dump(_if.rsp , _if.rsp , KERN_BASE - _if.rsp ,true);
+	// argument_stack(parse, count, &_if.rsp);
+
+	char *buf;
+	// hex_dump(_if.rsp , buf , KERN_BASE - _if.rsp ,true);
+	hex_dump(_if.rsp , buf , 1000 ,true);
+	printf("===YESSSSS===\n");
+	intr_dump_frame(&_if);
 
 	/* Start switched process. */
 	do_iret (&_if);
+
 	NOT_REACHED ();
 }
 void argument_stack(char **parse, int count, void **rsp) {
@@ -272,6 +282,7 @@ process_wait (tid_t child_tid UNUSED) {
 	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
+	
 	enum intr_level old_level;
 	old_level = intr_disable ();
 
@@ -407,6 +418,12 @@ load (const char *file_name, struct intr_frame *if_) {
 	bool success = false;
 	int i;
 
+	char *next_ptr;
+	char *first_file_name = strtok_r(file_name, " ", &next_ptr);	
+	char argv[100];				  //TBD: 100 안넘지 않을까...? <- (수연) <- 수정해야함
+	strlcpy(argv, next_ptr, 100); //TBD: 100 안넘지 않을까...? <- (수연) <- 수정해야함
+	
+
 	/* Allocate and activate page directory. */
 	t->pml4 = pml4_create ();
 	if (t->pml4 == NULL)
@@ -414,11 +431,11 @@ load (const char *file_name, struct intr_frame *if_) {
 	process_activate (thread_current ());
 	/* Open executable file. */
 
-	file = filesys_open (file_name);   // file_name = cd 부터 끝까지
+	file = filesys_open (first_file_name);   // file_name = cd 부터 끝까지
 
 
 	if (file == NULL) {
-		printf ("load: %s: open failed\n", file_name);
+		printf ("load: %s: open failed\n", first_file_name);
 		goto done;
 	}
 
@@ -438,6 +455,7 @@ load (const char *file_name, struct intr_frame *if_) {
 
 	/* Read program headers. */
 	file_ofs = ehdr.e_phoff;
+	
 	for (i = 0; i < ehdr.e_phnum; i++) {
 		struct Phdr phdr;
 
@@ -489,6 +507,7 @@ load (const char *file_name, struct intr_frame *if_) {
 		}
 	}
 
+	printf("===OMG111=== \n");
 	/* Set up stack. */
 	if (!setup_stack (if_)) //set rsp = USERSTACK
 		goto done;
@@ -496,9 +515,40 @@ load (const char *file_name, struct intr_frame *if_) {
 	/* Start address. */
 	if_->rip = ehdr.e_entry;
 
-	/* TODO: Your code goes here.
-	 * TODO: Implement argument passing (see project2/argument_passing.html). */
 	
+	// 0. (*argv로 옵션들이 다 들어온 상태)
+	printf("next_ptr is... %s \n", argv);
+	char f_name2[30] = "cho sung bae";
+	// 1. 조각조각 낸다. 조각내서 parse로 만든다
+	// char **parse = (char**)malloc((100000) * sizeof(char*));
+	char parse[20][100];
+	char *token, *save_ptr;
+	int count =0;
+
+
+// 	for (token = strtok_r (argv, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr)) {
+// 		if (parse[count] == NULL || token == NULL) continue;
+		
+// 		count++;
+// 		strlcpy(parse[count], token, sizeof(parse[count]));
+// 		printf("parse. %s\n", parse[count]);
+//    }
+
+	for (token = strtok_r (argv, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr)) {
+
+		if (parse[count] == NULL || token == NULL) continue;
+		strlcpy(parse[count], token, sizeof(parse[count]));
+		
+		printf("token is... %s \n",token);
+		printf("parse? is... %s \n",parse[count]);
+		count++;
+	}
+
+	printf("===OMG222=== \n");
+	// 2. 미리 만들어둔 stack_argument()함수로, "그" 형태를 만든다
+	
+	// 3. 과제설명처럼, rsi가 argv[0]을가르키도록, if->rdi = argc로 만든다.
+
 	success = true;
 
 done:
