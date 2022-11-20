@@ -170,7 +170,7 @@ process_exec (void *f_name) {
 	bool success;
 	char **parse;
 	int count = -1;
-
+    parse = (char**)malloc((100000) * sizeof(char*));
 	/* We cannot use the intr_frame in the thread structure.
 	 * This is because when current thread rescheduled,
 	 * it stores the execution information to the member. */
@@ -181,8 +181,15 @@ process_exec (void *f_name) {
    // TBD : 레지스터, 스택에 적재 하기 위해 parsing 
    char *token, *save_ptr;
 
+
    for (token = strtok_r (f_name, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr)) {
-		parse[++count] = token;	// 자신감 70
+		count++;
+
+		if (parse[count] == NULL || token == NULL) break;
+
+        strlcpy(parse[count], token, sizeof(parse[count]));
+		
+		// parse[++count] = token;	// 자신감 70
    }
 
 
@@ -208,7 +215,6 @@ process_exec (void *f_name) {
 void argument_stack(char **parse, int count, void **rsp) {
 	/* 프로그램 이름 및 인자(문자열) push */
 	/* 프로그램 이름 및 인자 주소들 push */
-	rsp = USER_STACK;
 	char **startings;
 	startings = (char **)calloc(0, sizeof(char *) * count);
 
@@ -266,6 +272,15 @@ process_wait (tid_t child_tid UNUSED) {
 	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
+	enum intr_level old_level;
+	old_level = intr_disable ();
+
+	while(true){
+		thread_block ();
+		//TBD sunny: change infinity loop condition
+	}
+	intr_set_level (old_level);
+
 	return -1;
 }
 
@@ -384,6 +399,7 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
  * Returns true if successful, false otherwise. */
 static bool
 load (const char *file_name, struct intr_frame *if_) {
+	printf("OMG!!! we came into Load!! \n");
 	struct thread *t = thread_current ();
 	struct ELF ehdr;
 	struct file *file = NULL;
@@ -396,13 +412,16 @@ load (const char *file_name, struct intr_frame *if_) {
 	if (t->pml4 == NULL)
 		goto done;
 	process_activate (thread_current ());
-
 	/* Open executable file. */
+
 	file = filesys_open (file_name);   // file_name = cd 부터 끝까지
+
+
 	if (file == NULL) {
 		printf ("load: %s: open failed\n", file_name);
 		goto done;
 	}
+
 
 	/* Read and verify executable header. */
 	if (file_read (file, &ehdr, sizeof ehdr) != sizeof ehdr
@@ -415,6 +434,7 @@ load (const char *file_name, struct intr_frame *if_) {
 		printf ("load: %s: error loading executable\n", file_name);
 		goto done;
 	}
+
 
 	/* Read program headers. */
 	file_ofs = ehdr.e_phoff;
@@ -478,7 +498,6 @@ load (const char *file_name, struct intr_frame *if_) {
 
 	/* TODO: Your code goes here.
 	 * TODO: Implement argument passing (see project2/argument_passing.html). */
-
 	
 	success = true;
 
