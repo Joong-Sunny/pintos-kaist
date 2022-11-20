@@ -171,9 +171,7 @@ process_exec (void *f_name) {
 	
 	char *file_name = f_name;
 	bool success;
-	char **parse;
-	int count = -1;
-    parse = (char**)malloc((100000) * sizeof(char*));
+
 	/* We cannot use the intr_frame in the thread structure.
 	 * This is because when current thread rescheduled,
 	 * it stores the execution information to the member. */
@@ -181,20 +179,6 @@ process_exec (void *f_name) {
 	_if.ds = _if.es = _if.ss = SEL_UDSEG;
 	_if.cs = SEL_UCSEG;
 	_if.eflags = FLAG_IF | FLAG_MBS;
-   // TBD : 레지스터, 스택에 적재 하기 위해 parsing 
-   char *token, *save_ptr;
-
-
-//    for (token = strtok_r (f_name, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr)) {
-// 		count++;
-
-// 		if (parse[count] == NULL || token == NULL) break;
-
-//         strlcpy(parse[count], token, sizeof(parse[count]));
-		
-// 		// parse[++count] = token;	// 자신감 70
-//    }
-
 
 	/* We first kill the current context */
 	process_cleanup ();
@@ -208,14 +192,9 @@ process_exec (void *f_name) {
 	if (!success)
 		return -1;
 
-	// TBD : 
-	// argument_stack(parse, count, &_if.rsp);
-
-	char *buf;
+	// char *buf;
 	// hex_dump(_if.rsp , buf , KERN_BASE - _if.rsp ,true);
-	hex_dump(_if.rsp , buf , 1000 ,true);
-	printf("===YESSSSS===\n");
-	intr_dump_frame(&_if);
+	// hex_dump(_if.rsp , buf , 1000 ,true);
 
 	/* Start switched process. */
 	do_iret (&_if);
@@ -225,46 +204,67 @@ process_exec (void *f_name) {
 void argument_stack(char **parse, int count, void **rsp) {
 	/* 프로그램 이름 및 인자(문자열) push */
 	/* 프로그램 이름 및 인자 주소들 push */
-	char **startings;
-	startings = (char **)calloc(0, sizeof(char *) * count);
+	
+	// 0. n = count를 받아온다
 
-	int len = 0;
+	// 1. 유저스택
+	// 2. 밑으로 자라나게 한다
+	// 3. n번째 인자를 쌓는다. 그 밑에 n-1번째 인자를 쌓는다 .... 첫번째 인자를 쌓는다
+		// n번째 인자의 주소를 저장한다. <= AAA
+		// n-1번째 인자의 주소를 저장한다. <= BBB
+		// ...
+		// 1번째 인자의 주소를 저장한다. <= CCC
+	// 4. padding을 넣어준다.
+	// 5. 마지막에 null을 넣어준다.
+	// 6. AAA를 넣어준다. BBB를 넣어준다. CCC를 넣어준다.
+	// 7. return address를 넣어준다.
 
-	int i, j;
-	for(i = count - 1 ; i > -1 ; i--)
-	{
-		for(j = strlen(parse[i]) ; j > -1 ; j--)
-		{
+
+
+//🐙<This>  <is> <argument>  <we>  <want>  <to>  <acquire>  <!!!>🐙
+//   0        1       2       3      4       5       6        7  
+
+//이경우 count = 7
+
+	//1.
+	char startings[20][100];
+	for (int i = count ; i >= 0; i--){
+
+		// <!!!>를 넣어야 하는 상황
+		// 3+1, 4부터 -- 시작,    count= i = 7인 상황, j = 3, 2, 1, 0 인 상황
+
+		// j[7][3] == NULL
+		// j[7][2] == !
+		// j[7][1] == !
+		// j[7][0] == ! <- 까지 완료 후, 이 주소를 저장해야 함
+		for (int j = (strlen(parse[i])); j >= 0; j--){
 			*rsp = *rsp - 1;
 			**(char **)rsp = parse[i][j];
 		}
-		startings[len++] = rsp;
+		// startings[7] <----- j[7][0]을 하고난직후의 rsp주소를 넣어줌
+		// 3.
+		strlcpy(startings[count], rsp, sizeof(startings[count]));
 	}
-	
-	// for word align
+	//4.
 	int diff = USER_STACK - (int)rsp;
-	int word_align = (((diff) + (8 - 1)) & ~0x7);
+	uint8_t word_align = (((diff) + (8 - 1)) & ~0x7);
 	*rsp = *rsp - word_align;
-	
-	// 자신감 1
-	*rsp = *rsp - sizeof(char *);
-	*(char *)rsp = '\0';
+	*(char *)rsp = 0;
 
-	//  TODO: push last argv 
-	int idx = 0;
-	while (idx < len) {
-		*rsp = *rsp - sizeof(char *);
-		*(char *)rsp = startings[idx];
-		idx++;
+	//5.
+	*rsp = *rsp - sizeof(char *);
+	*(char *)rsp = 0;
+
+	//6.
+	for (int i = count ; i >= 0; i--){ 	//i = 7,6,5,4,3,2,1,0
+	// startings[7] <----- j[7][0]을 하고난직후의 rsp주소를 다시 넣어준다.
+	*rsp = *rsp - sizeof(char *);
+	*(char *)rsp = startings[i];
 	}
-	// fake address
+
+	//7.
 	*rsp = *rsp - sizeof(char *);
-	*(char *)rsp = '\0';
-
-	/* argv (문자열을 가리키는 주소들의 배열을 가리킴) push*/
-	/* argc (문자열의 개수 저장) push */
-	/* fake address(0) 저장 */ 
-
+	*(char *)rsp = 0;
 }
 
 
@@ -282,17 +282,19 @@ process_wait (tid_t child_tid UNUSED) {
 	/* XXX: Hint) The pintos exit if process_wait (initd), we recommend you
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
-	
-	enum intr_level old_level;
-	old_level = intr_disable ();
 
-	while(true){
-		thread_block ();
-		//TBD sunny: change infinity loop condition
-	}
-	intr_set_level (old_level);
 
-	return -1;
+	thread_set_priority(thread_get_priority() -1 ); //기운형이 생각해냄(gooood!!!)
+
+	// enum intr_level old_level;
+	// old_level = intr_disable ();
+	// while(true){
+	// 	thread_block ();
+	// 	//TBD sunny: change infinity loop condition
+	// }
+	// intr_set_level (old_level);
+
+	// return -1;
 }
 
 /* Exit the process. This function is called by thread_exit (). */
@@ -507,7 +509,6 @@ load (const char *file_name, struct intr_frame *if_) {
 		}
 	}
 
-	printf("===OMG111=== \n");
 	/* Set up stack. */
 	if (!setup_stack (if_)) //set rsp = USERSTACK
 		goto done;
@@ -516,39 +517,36 @@ load (const char *file_name, struct intr_frame *if_) {
 	if_->rip = ehdr.e_entry;
 
 	
+
 	// 0. (*argv로 옵션들이 다 들어온 상태)
+	// 1. 조각조각 낸다. 조각내서 parse로 만든다
+	// 2. 미리 만들어둔 stack_argument()함수로, "그" 형태를 만든다
+	// 3. 과제설명처럼, rsi가 argv[0]을가르키도록, if->rdi = argc로 만든다.
+	// 4. done
+
+
+	// 0.
 	printf("next_ptr is... %s \n", argv);
 	char f_name2[30] = "cho sung bae";
-	// 1. 조각조각 낸다. 조각내서 parse로 만든다
+	// 1.
 	// char **parse = (char**)malloc((100000) * sizeof(char*));
 	char parse[20][100];
 	char *token, *save_ptr;
 	int count =0;
-
-
-// 	for (token = strtok_r (argv, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr)) {
-// 		if (parse[count] == NULL || token == NULL) continue;
-		
-// 		count++;
-// 		strlcpy(parse[count], token, sizeof(parse[count]));
-// 		printf("parse. %s\n", parse[count]);
-//    }
-
 	for (token = strtok_r (argv, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr)) {
 
 		if (parse[count] == NULL || token == NULL) continue;
 		strlcpy(parse[count], token, sizeof(parse[count]));
-		
-		printf("token is... %s \n",token);
-		printf("parse? is... %s \n",parse[count]);
 		count++;
 	}
-
-	printf("===OMG222=== \n");
-	// 2. 미리 만들어둔 stack_argument()함수로, "그" 형태를 만든다
-	
-	// 3. 과제설명처럼, rsi가 argv[0]을가르키도록, if->rdi = argc로 만든다.
-
+	// 2.
+	// argument_stack(parse, count-1, &if_->rsp); /*🚨🚨🚨🚨 <= 여기서 아싸리 -1해서 보내줌 🚨🚨🚨*/
+	// char *buf;
+	// hex_dump(if_->rsp , buf , 1000 ,true);
+	// 3.
+	if_	->R.rdi = count -1;
+	if_->R.rsi = &argv[0];
+	// 4. done
 	success = true;
 
 done:
