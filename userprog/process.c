@@ -184,8 +184,10 @@ process_exec (void *f_name) {
 	process_cleanup ();
 
 	/* And then load the binary */
-
+	
+	printf("1111_if.rsp=%p\n", _if.rsp);
 	success = load (file_name, &_if);
+	printf("22222_if.rsp=%p\n", _if.rsp);
 	
 	/* If load failed, quit. */
 	palloc_free_page (file_name);
@@ -193,7 +195,7 @@ process_exec (void *f_name) {
 		return -1;
 
 	// char *buf;
-	// hex_dump(_if.rsp , buf , KERN_BASE - _if.rsp ,true);
+	hex_dump(_if.rsp , _if.rsp , USER_STACK - _if.rsp ,true);
 	// hex_dump(_if.rsp , _if.rsp , 1000 ,true);
 
 	/* Start switched process. */
@@ -201,70 +203,40 @@ process_exec (void *f_name) {
 
 	NOT_REACHED ();
 }
-void argument_stack(char **parse, int count, void **rsp) {
-	/* 프로그램 이름 및 인자(문자열) push */
-	/* 프로그램 이름 및 인자 주소들 push */
-	
-	// 0. n = count를 받아온다
+void argument_stack(char parse[6][10], int count, struct intr_frame *if_) {
+// 	/* 프로그램 이름 및 인자(문자열) push */
+// 	/* 프로그램 이름 및 인자 주소들 push */
 
-	// 1. 유저스택
-	// 2. 밑으로 자라나게 한다
-	// 3. n번째 인자를 쌓는다. 그 밑에 n-1번째 인자를 쌓는다 .... 첫번째 인자를 쌓는다
-		// n번째 인자의 주소를 저장한다. <= AAA
-		// n-1번째 인자의 주소를 저장한다. <= BBB
-		// ...
-		// 1번째 인자의 주소를 저장한다. <= CCC
-	// 4. padding을 넣어준다.
-	// 5. 마지막에 null을 넣어준다.
-	// 6. AAA를 넣어준다. BBB를 넣어준다. CCC를 넣어준다.
-	// 7. return address를 넣어준다.
-
-
-
-//🐙<This>  <is> <argument>  <we>  <want>  <to>  <acquire>  <!!!>🐙
-//   0        1       2       3      4       5       6        7  
-
-//이경우 count = 7
-
-	//1.
 	char startings[6][10];
 	for (int i = count ; i >= 0; i--){
-
-		// <!!!>를 넣어야 하는 상황
-		// 3+1, 4부터 -- 시작,    count= i = 7인 상황, j = 3, 2, 1, 0 인 상황
-
-		// j[7][3] == NULL
-		// j[7][2] == !
-		// j[7][1] == !
-		// j[7][0] == ! <- 까지 완료 후, 이 주소를 저장해야 함
 		for (int j = (strlen(parse[i])); j >= 0; j--){
-			*rsp = *rsp - 1;
-			**(char **)rsp = parse[i][j];
+			if_->rsp = if_->rsp - 1;
+			// **(char **)(if_->rsp) = parse[i][j];
 		}
 		// startings[7] <----- j[7][0]을 하고난직후의 rsp주소를 넣어줌
 		// 3.
-		strlcpy(startings[count], rsp, sizeof(startings[count]));
+		// strlcpy(startings[count], if_->rsp, sizeof(startings[count]));
 	}
 	//4.
-	int diff = USER_STACK - (int)rsp;
+	int diff = USER_STACK - (int)(if_->rsp);
 	uint8_t word_align = (((diff) + (8 - 1)) & ~0x7);
-	*rsp = *rsp - word_align;
-	*(char *)rsp = 0;
+	if_->rsp = if_->rsp - word_align;
+	// *(char *)(if_->rsp) = 0;
 
 	//5.
-	*rsp = *rsp - sizeof(char *);
-	*(char *)rsp = 0;
+	if_->rsp = if_->rsp - sizeof(char *);
+	// *(char *)(if_->rsp) = 0;
 
 	//6.
-	for (int i = count ; i >= 0; i--){ 	//i = 7,6,5,4,3,2,1,0
+	// for (int i = count ; i >= 0; i--){ 	//i = 7,6,5,4,3,2,1,0
 	// startings[7] <----- j[7][0]을 하고난직후의 rsp주소를 다시 넣어준다.
-	*rsp = *rsp - sizeof(char *);
-	*(char *)rsp = startings[i];
-	}
+	if_->rsp = if_->rsp - sizeof(char *);
+	// *(char *)(if_->rsp) = startings[i];
+	// }
 
 	//7.
-	*rsp = *rsp - sizeof(char *);
-	*(char *)rsp = 0;
+	if_->rsp = if_->rsp - sizeof(char *);
+	// *(char *)(if_->rsp) = 0;
 }
 
 
@@ -540,11 +512,12 @@ load (const char *file_name, struct intr_frame *if_) {
 		count++;
 	}
 	// 2.
-	// argument_stack(parse, count-1, &if_->rsp); /*🚨🚨🚨🚨 <= 여기서 아싸리 -1해서 보내줌 🚨🚨🚨*/
+
+	argument_stack(parse, count-1, if_); /*🚨🚨🚨🚨 <= 여기서 아싸리 -1해서 보내줌 🚨🚨🚨*/
 
 	// 3.
-	if_	->R.rdi = count -1;
-	if_->R.rsi = &argv[0];
+	// if_	->R.rdi = count -1;
+	// if_->R.rsi = &argv[0];
 	// 4. done
 	success = true;
 
