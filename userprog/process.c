@@ -210,13 +210,21 @@ void argument_stack(char parse[6][10], int count, struct intr_frame *if_) {
 	char startings[6][10];
 	for (int i = count ; i >= 0; i--){
 		if_->rsp = if_->rsp - strlen(parse[i]) - 1;
-		strlcpy(if_->rsp, parse[i], sizeof(if_->rsp));
-		strlcpy(startings[count], &if_->rsp, sizeof(startings[count]));
+		strlcpy(if_->rsp, parse[i], 8);
+		strlcpy(startings[count], &if_->rsp, 8);
 	}
 	//4.
 	int diff = USER_STACK - if_->rsp;
-	uint8_t word_align = (((diff) + (8 - 1)) & ~0x7);
-	if_->rsp = if_->rsp - word_align;
+	uint8_t word_align = 0;
+
+	for (int i = 0; i < 16; ++i) {
+		if ((diff + i) % 16 == 0) {
+			word_align = i;
+			break;
+		}
+	}
+
+	if_->rsp = if_->rsp -  word_align;
 	*(char *)(if_->rsp) = 0;
 
 	//5.
@@ -225,13 +233,9 @@ void argument_stack(char parse[6][10], int count, struct intr_frame *if_) {
 
 
 	//6.
-	for (int i = count; i >= 0; i--) { 	//i = 7,6,5,4,3,2,1,0
-	// startings[7] <----- j[7][0]을 하고난직후의 rsp주소를 다시 넣어준다.
-		printf("===now... im in... %p \n", if_->rsp);
-		printf("=======i=%d\n", i);
+	for (int i = count; i >= 0; i--) {
 		if_->rsp = if_->rsp - sizeof(char *);
-		printf("====address= %s\n", startings[i]);
-		strlcpy(if_->rsp, startings[i], sizeof(if_->rsp));
+		strlcpy(if_->rsp, startings[i], 8);
 	}
 
 	//7.
