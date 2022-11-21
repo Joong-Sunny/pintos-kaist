@@ -211,32 +211,30 @@ void argument_stack(char parse[6][10], int count, struct intr_frame *if_) {
 	for (int i = count ; i >= 0; i--){
 		for (int j = (strlen(parse[i])); j >= 0; j--){
 			if_->rsp = if_->rsp - 1;
-			// **(char **)(if_->rsp) = parse[i][j];
 		}
-		// startings[7] <----- j[7][0]을 하고난직후의 rsp주소를 넣어줌
-		// 3.
-		// strlcpy(startings[count], if_->rsp, sizeof(startings[count]));
+		strlcpy(if_->rsp, parse[i], sizeof(startings[count]));
+		strlcpy(startings[count], if_->rsp, sizeof(startings[count]));
 	}
 	//4.
 	int diff = USER_STACK - (int)(if_->rsp);
 	uint8_t word_align = (((diff) + (8 - 1)) & ~0x7);
 	if_->rsp = if_->rsp - word_align;
-	// *(char *)(if_->rsp) = 0;
+	*(char *)(if_->rsp) = 0;
 
 	//5.
 	if_->rsp = if_->rsp - sizeof(char *);
-	// *(char *)(if_->rsp) = 0;
+	*(char *)(if_->rsp) = 0;
 
 	//6.
-	// for (int i = count ; i >= 0; i--){ 	//i = 7,6,5,4,3,2,1,0
+	for (int i = count ; i >= 0; i--){ 	//i = 7,6,5,4,3,2,1,0
 	// startings[7] <----- j[7][0]을 하고난직후의 rsp주소를 다시 넣어준다.
 	if_->rsp = if_->rsp - sizeof(char *);
-	// *(char *)(if_->rsp) = startings[i];
-	// }
+	*(char *)(if_->rsp) = startings[i];
+	}
 
 	//7.
 	if_->rsp = if_->rsp - sizeof(char *);
-	// *(char *)(if_->rsp) = 0;
+	*(char *)(if_->rsp) = 0;
 }
 
 
@@ -516,8 +514,8 @@ load (const char *file_name, struct intr_frame *if_) {
 	argument_stack(parse, count-1, if_); /*🚨🚨🚨🚨 <= 여기서 아싸리 -1해서 보내줌 🚨🚨🚨*/
 
 	// 3.
-	// if_	->R.rdi = count -1;
-	// if_->R.rsi = &argv[0];
+	if_	->R.rdi = count -1;
+	if_->R.rsi = &argv[0];
 	// 4. done
 	success = true;
 
