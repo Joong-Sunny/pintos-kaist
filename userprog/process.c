@@ -203,22 +203,24 @@ process_exec (void *f_name) {
 
 	NOT_REACHED ();
 }
-void argument_stack(char parse[6][10], int count, struct intr_frame *if_) {
+void argument_stack(char parse[6][20], int count, struct intr_frame *if_) {
 // 	/* 프로그램 이름 및 인자(문자열) push */
 // 	/* 프로그램 이름 및 인자 주소들 push */
 
-	char startings[6][10];
+	int width = 8;
+	char startings[6][20];
 	for (int i = count ; i >= 0; i--){
+		printf("=======cur parse[i]=%s", parse[i]);
 		if_->rsp = if_->rsp - strlen(parse[i]) - 1;
-		strlcpy(if_->rsp, parse[i], 8);
-		strlcpy(startings[count], &if_->rsp, 8);
+		strlcpy(if_->rsp, parse[i], width);
+		strlcpy(startings[count], &if_->rsp, width);
 	}
 	//4.
 	int diff = USER_STACK - if_->rsp;
 	uint8_t word_align = 0;
 
-	for (int i = 0; i < 16; ++i) {
-		if ((diff + i) % 16 == 0) {
+	for (int i = 0; i < width; ++i) {
+		if ((diff + i) % width == 0) {
 			word_align = i;
 			break;
 		}
@@ -228,18 +230,18 @@ void argument_stack(char parse[6][10], int count, struct intr_frame *if_) {
 	*(char *)(if_->rsp) = 0;
 
 	//5.
-	if_->rsp = if_->rsp - sizeof(char *);
+	if_->rsp = if_->rsp - width;
 	*(char *)(if_->rsp) = 0;
 
 
 	//6.
 	for (int i = count; i >= 0; i--) {
-		if_->rsp = if_->rsp - sizeof(char *);
-		strlcpy(if_->rsp, startings[i], 8);
+		if_->rsp = if_->rsp - width;
+		strlcpy(if_->rsp, startings[i], width);
 	}
 
 	//7.
-	if_->rsp = if_->rsp - sizeof(char *);
+	if_->rsp = if_->rsp - width;
 	*(char *)(if_->rsp) = 0;
 }
 
@@ -505,7 +507,7 @@ load (const char *file_name, struct intr_frame *if_) {
 	char f_name2[30] = "cho sung bae";
 	// 1.
 	// char **parse = (char**)malloc((100000) * sizeof(char*));
-	char parse[6][10];
+	char parse[6][20];
 	char *token, *save_ptr;
 	int count =0;
 	for (token = strtok_r (argv, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr)) {
