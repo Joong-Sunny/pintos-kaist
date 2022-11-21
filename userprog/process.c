@@ -209,9 +209,7 @@ void argument_stack(char parse[6][10], int count, struct intr_frame *if_) {
 
 	char startings[6][10];
 	for (int i = count ; i >= 0; i--){
-		for (int j = (strlen(parse[i])); j >= 0; j--){
-			if_->rsp = if_->rsp - 1;
-		}
+		if_->rsp = if_->rsp - strlen(parse[i]) - 1;
 		strlcpy(if_->rsp, parse[i], sizeof(startings[count]));
 		strlcpy(startings[count], if_->rsp, sizeof(startings[count]));
 	}
