@@ -203,7 +203,7 @@ process_exec (void *f_name) {
 
 	NOT_REACHED ();
 }
-void argument_stack(char parse[30][8], int count, struct intr_frame *if_) {
+void argument_stack(char parse[30][30], int count, struct intr_frame *if_) {
 // 	/* 프로그램 이름 및 인자(문자열) push */
 // 	/* 프로그램 이름 및 인자 주소들 push */
 
@@ -236,8 +236,6 @@ void argument_stack(char parse[30][8], int count, struct intr_frame *if_) {
 	//6.
 	for (int i = count; i >= 0; i--) {
 		if_->rsp = if_->rsp - width;
-		startings[i] = if_->rsp;
-
 		printf("=======startings[count]=%p\n", startings[count]);
 		// snprintf(if_->rsp, 16, "%s", startings[i]);
 		memcpy(if_->rsp, &startings[i], sizeof(uintptr_t));
@@ -507,7 +505,7 @@ load (const char *file_name, struct intr_frame *if_) {
 
 	// 1.
 	// char **parse = (char**)malloc((100000) * sizeof(char*));
-	char parse[30][8];
+	char parse[30][30];
 	char *token, *save_ptr;
 	int count =0;
 	for (token = strtok_r (argv, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr)) {
