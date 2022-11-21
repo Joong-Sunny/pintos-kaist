@@ -9,5 +9,5 @@ int process_exec (void *f_name);
 int process_wait (tid_t);
 void process_exit (void);
 void process_activate (struct thread *next);
-void argument_stack(char parse[6][20], int count, struct intr_frame *if_);
+void argument_stack(char parse[30][8], int count, struct intr_frame *if_);
 #endif /* userprog/process.h */
