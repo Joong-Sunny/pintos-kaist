@@ -194,7 +194,7 @@ process_exec (void *f_name) {
 
 	// char *buf;
 	// hex_dump(_if.rsp , buf , KERN_BASE - _if.rsp ,true);
-	// hex_dump(_if.rsp , buf , 1000 ,true);
+	// hex_dump(_if.rsp , _if.rsp , 1000 ,true);
 
 	/* Start switched process. */
 	do_iret (&_if);
@@ -227,7 +227,7 @@ void argument_stack(char **parse, int count, void **rsp) {
 //이경우 count = 7
 
 	//1.
-	char startings[20][100];
+	char startings[6][10];
 	for (int i = count ; i >= 0; i--){
 
 		// <!!!>를 넣어야 하는 상황
@@ -530,7 +530,7 @@ load (const char *file_name, struct intr_frame *if_) {
 	char f_name2[30] = "cho sung bae";
 	// 1.
 	// char **parse = (char**)malloc((100000) * sizeof(char*));
-	char parse[20][100];
+	char parse[6][10];
 	char *token, *save_ptr;
 	int count =0;
 	for (token = strtok_r (argv, " ", &save_ptr); token != NULL; token = strtok_r (NULL, " ", &save_ptr)) {
@@ -541,8 +541,7 @@ load (const char *file_name, struct intr_frame *if_) {
 	}
 	// 2.
 	// argument_stack(parse, count-1, &if_->rsp); /*🚨🚨🚨🚨 <= 여기서 아싸리 -1해서 보내줌 🚨🚨🚨*/
-	// char *buf;
-	// hex_dump(if_->rsp , buf , 1000 ,true);
+
 	// 3.
 	if_	->R.rdi = count -1;
 	if_->R.rsi = &argv[0];
