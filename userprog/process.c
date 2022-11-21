@@ -212,7 +212,7 @@ void argument_stack(char parse[6][20], int count, struct intr_frame *if_) {
 	for (int i = count ; i >= 0; i--){
 		printf("=======cur parse[i]=%s", parse[i]);
 		if_->rsp = if_->rsp - strlen(parse[i]) - 1;
-		strlcpy(if_->rsp, parse[i], width);
+		strlcpy(if_->rsp, parse[i], strlen(parse[i])+1);
 		strlcpy(startings[count], &if_->rsp, width);
 	}
 	//4.
