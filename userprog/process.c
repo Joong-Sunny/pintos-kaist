@@ -392,11 +392,11 @@ load (const char *file_name, struct intr_frame *if_) {
 	bool success = false;
 	int i;
 
+	char argv[100];				  //TBD: 100 안넘지 않을까...? <- (수연) <- 수정해야함
+	strlcpy(argv, file_name, 100); //TBD: 100 안넘지 않을까...? <- (수연) <- 수정해야함
+
 	char *next_ptr;
 	char *first_file_name = strtok_r(file_name, " ", &next_ptr);	
-	char argv[100];				  //TBD: 100 안넘지 않을까...? <- (수연) <- 수정해야함
-	strlcpy(argv, next_ptr, 100); //TBD: 100 안넘지 않을까...? <- (수연) <- 수정해야함
-	
 
 	/* Allocate and activate page directory. */
 	t->pml4 = pml4_create ();
@@ -489,7 +489,6 @@ load (const char *file_name, struct intr_frame *if_) {
 	if_->rip = ehdr.e_entry;
 
 	
-
 	// 0. (*argv로 옵션들이 다 들어온 상태)
 	// 1. 조각조각 낸다. 조각내서 parse로 만든다
 	// 2. 미리 만들어둔 stack_argument()함수로, "그" 형태를 만든다
