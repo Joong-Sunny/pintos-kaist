@@ -356,7 +356,7 @@ bool cmp_sem_priority (const struct list_elem *a, const struct list_elem *b, voi
 	struct list_elem *sa_head = list_begin(&(sa->semaphore.waiters));
 	struct list_elem *sb_head = list_begin(&(sb->semaphore.waiters));
 
-	struct thread*sa_head_priority = list_entry(sa_head, struct thread, elem)->priority;
-	struct thread*sb_head_priority = list_entry(sb_head, struct thread, elem)->priority;
+	int sa_head_priority = list_entry(sa_head, struct thread, elem)->priority;
+	int sb_head_priority = list_entry(sb_head, struct thread, elem)->priority;
 	return sa_head_priority > sb_head_priority;
 }
