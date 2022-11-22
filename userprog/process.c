@@ -166,9 +166,6 @@ error:
  * Returns -1 on fail. */
 int
 process_exec (void *f_name) {
-	printf("===DEBUG f_name is... %s ====\n", f_name);
-	// f_name에 
-	
 	char *file_name = f_name;
 	bool success;
 
@@ -184,10 +181,8 @@ process_exec (void *f_name) {
 	process_cleanup ();
 
 	/* And then load the binary */
-	
-	printf("1111_if.rsp=%p\n", _if.rsp);
 	success = load (file_name, &_if);
-	printf("22222_if.rsp=%p\n", _if.rsp);
+
 	
 	/* If load failed, quit. */
 	palloc_free_page (file_name);
@@ -236,8 +231,6 @@ void argument_stack(char parse[30][30], int count, struct intr_frame *if_) {
 	//6.
 	for (int i = count; i >= 0; i--) {
 		if_->rsp = if_->rsp - width;
-		printf("=======startings[count]=%p\n", startings[count]);
-		// snprintf(if_->rsp, 16, "%s", startings[i]);
 		memcpy(if_->rsp, &startings[i], sizeof(uintptr_t));
 	}
 
@@ -246,7 +239,6 @@ void argument_stack(char parse[30][30], int count, struct intr_frame *if_) {
 	*(char *)(if_->rsp) = 0;
 
 	
-	printf("=== my count is... %d ===\n", count);
 	//8.
 	if_->R.rdi = count+1;
 	if_->R.rsi = if_->rsp + width;
@@ -397,7 +389,6 @@ static bool load_segment (struct file *file, off_t ofs, uint8_t *upage,
  * Returns true if successful, false otherwise. */
 static bool
 load (const char *file_name, struct intr_frame *if_) {
-	printf("OMG!!! we came into Load!! \n");
 	struct thread *t = thread_current ();
 	struct ELF ehdr;
 	struct file *file = NULL;
