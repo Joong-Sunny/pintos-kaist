@@ -207,7 +207,7 @@ void argument_stack(char parse[30][30], int count, struct intr_frame *if_) {
 // 	/* 프로그램 이름 및 인자(문자열) push */
 // 	/* 프로그램 이름 및 인자 주소들 push */
 
-	int width = 8;
+	int width = sizeof(char *);
 	uintptr_t startings[30];
 	for (int i = count ; i >= 0; i--){
 		if_->rsp = if_->rsp - strlen(parse[i]) - 1;
@@ -244,6 +244,12 @@ void argument_stack(char parse[30][30], int count, struct intr_frame *if_) {
 	//7.
 	if_->rsp = if_->rsp - width;
 	*(char *)(if_->rsp) = 0;
+
+	
+	printf("=== my count is... %d ===\n", count);
+	//8.
+	if_->R.rdi = count+1;
+	if_->R.rsi = if_->rsp + width;
 }
 
 
@@ -519,8 +525,8 @@ load (const char *file_name, struct intr_frame *if_) {
 	argument_stack(parse, count-1, if_); /*🚨🚨🚨🚨 <= 여기서 아싸리 -1해서 보내줌 🚨🚨🚨*/
 
 	// 3.
-	if_	->R.rdi = count -1;
-	if_->R.rsi = &argv[0];
+
+
 	// 4. done
 	success = true;
 

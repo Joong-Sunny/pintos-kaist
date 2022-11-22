@@ -44,14 +44,22 @@ syscall_init (void) {
 /* The main system call interface */
 void
 syscall_handler (struct intr_frame *f UNUSED) {
+	printf("===entered syscall_handler that we made===\n");
+	
 	// TODO: Your implementation goes here.
 	// 유저 스택에 저장되어 있는 시스템 콜 넘버를 이용해 시스템 콜 핸들러 구현
 	// 스택 포인터가 유저 영역인지 확인
 	check_address(f->rsp);
-	
+	printf("===address check passed!!=== \n", f->R.rax);
+	printf("===this is my system call<<< %d >>>>=== \n", f->R.rax);
 	switch (f->R.rax) {
 		case SYS_HALT:
 			halt();
+			break;
+		
+		case SYS_WRITE:
+			printf("===we came in to write we made !===\n");
+			f->R.rax = write(f->R.rdi, f->R.rsi, f->R.rdx);
 			break;
 	}
 
@@ -73,4 +81,13 @@ void check_address(void *addr)	{
 void halt(void) {
 	// 거의 사용하지 않는게 좋음.
 	power_off();
+}
+
+int write (int fd, const void *buffer, unsigned size) {
+	if (fd == 1) {
+		putbuf(buffer, size);
+		return size;
+	}
+	
+	// return file_write(fd, buffer, size);
 }
