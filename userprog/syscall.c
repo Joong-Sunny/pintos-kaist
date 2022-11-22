@@ -7,6 +7,10 @@
 #include "userprog/gdt.h"
 #include "threads/flags.h"
 #include "intrinsic.h"
+#include "filesys/filesys.h"
+#include "filesys/file.h"
+#include "threads/init.h"
+#include "userprog/process.h"
 
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
@@ -41,6 +45,32 @@ syscall_init (void) {
 void
 syscall_handler (struct intr_frame *f UNUSED) {
 	// TODO: Your implementation goes here.
+	// 유저 스택에 저장되어 있는 시스템 콜 넘버를 이용해 시스템 콜 핸들러 구현
+	// 스택 포인터가 유저 영역인지 확인
+	check_address(f->rsp);
+	
+	switch (f->R.rax) {
+		case SYS_HALT:
+			halt();
+			break;
+	}
+
 	printf ("system call!\n");
 	thread_exit ();
+}
+
+// TBD chobae : pintos syscall func add
+void check_address(void *addr)	{
+	/*  포인터가 가리키는 주소가 유저영역의 주소인지 확인
+		잘못된 접근일 경우 프로세스 종료
+		유효한 주소 (0x8048000 ~ 0x0000000)인지 확인
+	*/
+	if (is_kernel_vaddr(addr)) {
+		process_exit();
+	}
+}
+
+void halt(void) {
+	// 거의 사용하지 않는게 좋음.
+	power_off();
 }
