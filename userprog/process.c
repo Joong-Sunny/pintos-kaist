@@ -51,11 +51,11 @@ process_create_initd (const char *file_name) {
 	strlcpy (fn_copy, file_name, PGSIZE);
 
 	// // TBD fn_copy 파싱 :  첫번째 공백 전까지의 문자열 파싱
-	// char *next_ptr;
-	// char *first_file_name = strtok_r(fn_copy, " ", &next_ptr);
+	char *next_ptr;
+	char *first_file_name = strtok_r(file_name, " ", &next_ptr);
 
 	/* Create a new thread to execute FILE_NAME. */
-	tid = thread_create (file_name, PRI_DEFAULT, initd, fn_copy);
+	tid = thread_create (first_file_name, PRI_DEFAULT, initd, fn_copy);
 	if (tid == TID_ERROR)
 		palloc_free_page (fn_copy);
 	return tid;
@@ -190,7 +190,7 @@ process_exec (void *f_name) {
 		return -1;
 
 	// char *buf;
-	hex_dump(_if.rsp , _if.rsp , USER_STACK - _if.rsp ,true);
+	// hex_dump(_if.rsp , _if.rsp , USER_STACK - _if.rsp ,true);
 	// hex_dump(_if.rsp , _if.rsp , 1000 ,true);
 
 	/* Start switched process. */
