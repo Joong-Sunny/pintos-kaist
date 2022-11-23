@@ -48,13 +48,53 @@ syscall_handler (struct intr_frame *f UNUSED) {
 	// 유저 스택에 저장되어 있는 시스템 콜 넘버를 이용해 시스템 콜 핸들러 구현
 	// 스택 포인터가 유저 영역인지 확인
 	check_address(f->rsp);
-	printf("== f->R.rax== %d \n", f->R.rax);
+	// printf("== f->R.rax== %d \n", f->R.rax);
 	switch (f->R.rax) {
 		case SYS_HALT:
 			halt();
 			break;
 		case SYS_WRITE:
 			f->R.rax = write(f->R.rdi, f->R.rsi, f->R.rdx);
+			break;
+		case SYS_EXIT:
+			// printf("== f->R.rdi== %d \n", f->R.rdi);
+			// printf("== f->R.rdx== %d \n", f->R.rdx);
+			exit(f->R.rdi);
+			break;
+		// case SYS_FORK:
+		// 	fork();
+		// 	break;
+		// case SYS_EXEC:
+		// 	exec(f->R.rdi);
+		// 	break;
+		// case SYS_WAIT:
+		// 	wait();
+		// 	break;
+		// case SYS_CREATE:
+		// 	create();
+		// 	break;
+		// case SYS_REMOVE:
+		// 	remove();
+		// 	break;
+		// case SYS_OPEN:
+		// 	open();
+		// 	break;
+		// case SYS_FILESIZE:
+		// 	filesize();
+		// 	break;
+		// case SYS_READ:
+		// 	read();
+		// 	break;
+		// case SYS_SEEK:
+		// 	seek();
+		// 	break;
+		// case SYS_TELL:
+		// 	tell();
+		// 	break;
+		// case SYS_CLOSE:
+		// 	close();
+		// 	break;
+		default:
 			break;
 	}
 }
@@ -84,3 +124,10 @@ int write (int fd, const void *buffer, unsigned size) {
 	// return file_write(fd, buffer, size);
 }
 
+// exit() -> 실행중인 스레드? 프로세스? 종료 후 status 리턴
+void exit(int status) {
+	struct thread *cur = thread_current();
+	thread_current()->tf.R.rdi = status;
+	printf("%s: exit(%d)\n", cur->name, status);
+	thread_exit();
+}
