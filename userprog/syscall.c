@@ -48,19 +48,15 @@ syscall_handler (struct intr_frame *f UNUSED) {
 	// 유저 스택에 저장되어 있는 시스템 콜 넘버를 이용해 시스템 콜 핸들러 구현
 	// 스택 포인터가 유저 영역인지 확인
 	check_address(f->rsp);
-	
+	printf("== f->R.rax== %d \n", f->R.rax);
 	switch (f->R.rax) {
 		case SYS_HALT:
 			halt();
 			break;
-		
 		case SYS_WRITE:
 			f->R.rax = write(f->R.rdi, f->R.rsi, f->R.rdx);
 			break;
 	}
-
-	printf ("system call!\n");
-	thread_exit ();
 }
 
 // TBD chobae : pintos syscall func add
@@ -87,3 +83,4 @@ int write (int fd, const void *buffer, unsigned size) {
 	
 	// return file_write(fd, buffer, size);
 }
+
