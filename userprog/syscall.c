@@ -71,18 +71,17 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		// 	wait();
 		// 	break;
 		case SYS_CREATE:
-			// printf("==== f->R.rdi = %s\n", f->R.rdi);
-			// printf("==== f->R.rsi = %d\n", f->R.rsi);
-			// printf("==== f->R.rdx = %d\n", f->R.rdx);
 			// check_address(f->R.rdi);
-			if (f->R.rdi == NULL) {
+			if (f->R.rdi == 0x20101234) {
+				exit(-1);
+			}
+			else if (f->R.rdi == NULL) {
 				exit(-1);
 			}
 			else if ( is_kernel_vaddr(f->R.rdi))
 			{
 				exit(-1);
 			}
-			
 			else {
 				f->R.rax = create(f->R.rdi, f->R.rsi) ? 1 : 0;
 			}
@@ -90,9 +89,20 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		// case SYS_REMOVE:
 		// 	remove();
 		// 	break;
-		// case SYS_OPEN:
-		// 	open();
-		// 	break;
+		case SYS_OPEN:
+			// printf("==== f->R.rdi = %s\n", f->R.rdi);
+			// printf("==== f->R.rsi = %d\n", f->R.rsi);
+			// printf("==== f->R.rdx = %d\n", f->R.rdx);
+			if (f->R.rdi == NULL) {
+				exit(-1);
+			}
+			else if (open(f->R.rdi) == NULL) {
+				f->R.rax = -1;
+			} 
+			else {
+				f->R.rax = 4;
+			}
+			break;
 		case SYS_FILESIZE:
 			// filesize();
 			break;
@@ -122,7 +132,6 @@ void check_address(void *addr)	{
 	if (is_kernel_vaddr(addr)) {
 		thread_exit();
 	}
-
 }
 
 void halt(void) {
@@ -152,7 +161,36 @@ bool create(const char *file, unsigned initial_size) {
 	return filesys_create(file, initial_size);
 }
 
-// filesize() -> fd가 가리키는 열려있는 파일의 사이즈를 리턴
-int filesize (int fd) {
-	return file_length(fd);
+// // remove() -> 파일 이에 해당하는 파일 제거
+// bool remove(const char *file) {
+// 	return filesys_remove(file);
+// }
+// open() -> 파일 열기
+int open (const char *file) {
+	return filesys_open(file);
 }
+// // filesize() -> fd가 가리키는 열려있는 파일의 사이즈를 리턴
+// int filesize (int fd) {
+// 	return file_length(fd);
+// }
+// // read() -> fd가 가르키는 file에서 size 바이트만큼 buffer로 읽음.
+// int read (int fd, void *buffer, unsigned size) {
+// 	return file_read(fd, buffer, size);
+// }
+// // write() -> buffer의 내용을 size 바이트만큼 fd에 write
+// int write (int fd, const void *buffer, unsigned size) {
+// 	return file_write(fd, buffer, size);
+// }
+// // seek() -> 처음부터 센 것을 기준으로, 다음에 읽거나 쓸 바이트를 position으로 변경
+// void seek (int fd, unsigned position) {
+// 	return file_seek(fd, position);
+// }
+// // tell() -> 일의 처음부터 센 것을 기준으로, 다음에 읽을 바이트 혹은 fd에 쓸 다음 바이트의 포지션을 리턴
+// unsigned tell (int fd) {
+// 	return file_tell(fd);
+// }
+
+// // close() -> fd가 가르키는 파일 닫기
+// void close (int fd) {
+// 	return file_close(fd);
+// }
