@@ -86,9 +86,9 @@ syscall_handler (struct intr_frame *f UNUSED) {
 				f->R.rax = create(f->R.rdi, f->R.rsi) ? 1 : 0;
 			}
 			break;
-		// case SYS_REMOVE:
-		// 	remove();
-		// 	break;
+		case SYS_REMOVE:
+			f->R.rax = remove(f->R.rdi) ? 1 : 0;
+			break;
 		case SYS_OPEN:
 			// printf("==== f->R.rdi = %s\n", f->R.rdi);
 			// printf("==== f->R.rsi = %d\n", f->R.rsi);
@@ -161,10 +161,10 @@ bool create(const char *file, unsigned initial_size) {
 	return filesys_create(file, initial_size);
 }
 
-// // remove() -> 파일 이에 해당하는 파일 제거
-// bool remove(const char *file) {
-// 	return filesys_remove(file);
-// }
+// remove() -> 파일 이에 해당하는 파일 제거
+bool remove(const char *file) {
+	return filesys_remove(file);
+}
 // open() -> 파일 열기
 int open (const char *file) {
 	return filesys_open(file);
