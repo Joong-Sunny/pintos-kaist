@@ -19,5 +19,6 @@ int write (int fd, const void *buffer, unsigned size);
 void seek (int fd, unsigned position);
 unsigned tell (int fd);
 void close (int fd);
-
+// static int64_t get_user (const uint8_t *uaddr);
+// static bool put_user (uint8_t *udst, uint8_t byte);
 #endif /* userprog/syscall.h */
