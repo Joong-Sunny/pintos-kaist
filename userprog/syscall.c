@@ -47,7 +47,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
 	// TODO: Your implementation goes here.
 	// 유저 스택에 저장되어 있는 시스템 콜 넘버를 이용해 시스템 콜 핸들러 구현
 	// 스택 포인터가 유저 영역인지 확인
-	check_address(f->rsp);
+	// check_address(f->rsp);
 	// printf("== f->R.rax== %d \n", f->R.rax);
 	switch (f->R.rax) {
 		case SYS_HALT:
@@ -70,18 +70,32 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		// case SYS_WAIT:
 		// 	wait();
 		// 	break;
-		// case SYS_CREATE:
-		// 	create();
-		// 	break;
+		case SYS_CREATE:
+			// printf("==== f->R.rdi = %s\n", f->R.rdi);
+			// printf("==== f->R.rsi = %d\n", f->R.rsi);
+			// printf("==== f->R.rdx = %d\n", f->R.rdx);
+			// check_address(f->R.rdi);
+			if (f->R.rdi == NULL) {
+				exit(-1);
+			}
+			else if ( is_kernel_vaddr(f->R.rdi))
+			{
+				exit(-1);
+			}
+			
+			else {
+				f->R.rax = create(f->R.rdi, f->R.rsi) ? 1 : 0;
+			}
+			break;
 		// case SYS_REMOVE:
 		// 	remove();
 		// 	break;
 		// case SYS_OPEN:
 		// 	open();
 		// 	break;
-		// case SYS_FILESIZE:
-		// 	filesize();
-		// 	break;
+		case SYS_FILESIZE:
+			// filesize();
+			break;
 		// case SYS_READ:
 		// 	read();
 		// 	break;
@@ -106,8 +120,9 @@ void check_address(void *addr)	{
 		유효한 주소 (0x8048000 ~ 0x0000000)인지 확인
 	*/
 	if (is_kernel_vaddr(addr)) {
-		process_exit();
+		thread_exit();
 	}
+
 }
 
 void halt(void) {
@@ -130,4 +145,14 @@ void exit(int status) {
 	thread_current()->tf.R.rdi = status;
 	printf("%s: exit(%d)\n", cur->name, status);
 	thread_exit();
+}
+
+// create() -> 파일 이름과 크기에 해당하는 파일 생성
+bool create(const char *file, unsigned initial_size) {
+	return filesys_create(file, initial_size);
+}
+
+// filesize() -> fd가 가리키는 열려있는 파일의 사이즈를 리턴
+int filesize (int fd) {
+	return file_length(fd);
 }
