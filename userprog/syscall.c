@@ -73,14 +73,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		// 	break;
 		case SYS_CREATE:
 			// printf("=== get_user result = %d\n", get_user(f->R.rdi));
-			if (get_user (f->R.rdi) == -1) {
-				exit(-1);
-			}
-			else if (f->R.rdi == NULL) {
-				exit(-1);
-			}
-			else if ( is_kernel_vaddr(f->R.rdi))
-			{
+			if (f->R.rdi == NULL || get_user (f->R.rdi) == -1 || is_kernel_vaddr(f->R.rdi)) {
 				exit(-1);
 			}
 			else {
