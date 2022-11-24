@@ -9,6 +9,7 @@
 #include "intrinsic.h"
 #include "filesys/filesys.h"
 #include "filesys/file.h"
+// #include "filesys/file.c"
 #include "threads/init.h"
 #include "userprog/process.h"
 
@@ -90,19 +91,19 @@ syscall_handler (struct intr_frame *f UNUSED) {
 			if (f->R.rdi == NULL) {
 				exit(-1);
 			}
-			else if (open(f->R.rdi) == NULL) {
-				f->R.rax = -1;
-			} 
-			else {
-				f->R.rax = 4;
-			}
+			int result = open(f->R.rdi);
+			f->R.rax = result == NULL ? -1 : result;
 			break;
 		case SYS_FILESIZE:
-			// filesize();
+			f->R.rax = filesize(f->R.rdi);
 			break;
-		// case SYS_READ:
-		// 	read();
-		// 	break;
+		case SYS_READ:
+			// printf("========== after checing - SYS_READ?? \n");
+			printf("==== f->R.rdi = %d\n", f->R.rdi);
+			printf("==== f->R.rsi = %s\n", f->R.rsi);
+			printf("==== f->R.rdx = %d\n", f->R.rdx);
+			f->R.rax = read(f->R.rdi, f->R.rsi, f->R.rdx);
+			break;
 		// case SYS_SEEK:
 		// 	seek();
 		// 	break;
@@ -113,6 +114,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		// 	close();
 		// 	break;
 		default:
+			// thread_exit()
 			break;
 	}
 }
@@ -188,18 +190,37 @@ bool create(const char *file, unsigned initial_size) {
 bool remove(const char *file) {
 	return filesys_remove(file);
 }
-// open() -> 파일 열기
+
+/*open file and allocate fd, allocate file to entry*/
 int open (const char *file) {
-	return filesys_open(file);
+	fd_t fd = allocate_fd();
+	struct file* file_obj = filesys_open(file);
+	if (file_obj == NULL) {
+		return NULL;
+	}
+	else {
+		thread_current()->fd_arr[fd] = file_obj;
+		return fd;
+	}
 }
-// // filesize() -> fd가 가리키는 열려있는 파일의 사이즈를 리턴
-// int filesize (int fd) {
-// 	return file_length(fd);
-// }
-// // read() -> fd가 가르키는 file에서 size 바이트만큼 buffer로 읽음.
-// int read (int fd, void *buffer, unsigned size) {
-// 	return file_read(fd, buffer, size);
-// }
+
+// filesize() -> fd가 가리키는 열려있는 파일의 사이즈를 리턴
+int filesize (int fd) {
+	// fd를 통해 파일을 찾는다.
+	// printf("===== hi 1111 \n");
+	struct file* file = thread_current()->fd_arr[fd];
+	
+	// printf("===== hi 2222 file= %p \n", file);
+
+	off_t len = file_length(file);
+	printf(" ======== file_length(file)=%d \n", len);
+	return len;
+}
+// read() -> fd가 가르키는 file에서 size 바이트만큼 buffer로 읽음.
+int read (int fd, void *buffer, unsigned size) {
+	printf("========== after checking?? fd=%d, buffer=%s size=%d \n", fd, buffer, size);
+	return file_read(fd, buffer, size);
+}
 // // write() -> buffer의 내용을 size 바이트만큼 fd에 write
 // int write (int fd, const void *buffer, unsigned size) {
 // 	return file_write(fd, buffer, size);

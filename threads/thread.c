@@ -12,7 +12,6 @@
 #include "threads/vaddr.h"
 #include "intrinsic.h"
 
-
 #ifdef USERPROG
 #include "userprog/process.h"
 #endif
@@ -451,12 +450,14 @@ init_thread (struct thread *t, const char *name, int priority) {
 	strlcpy (t->name, name, sizeof t->name);
 	t->tf.rsp = (uint64_t) t + PGSIZE - sizeof (void *);
 	t->priority = priority;
-	/*TBD everyone */
 	t->init_priority = priority;
-	/*TBD DONE*/
 	t->magic = THREAD_MAGIC;
 	t->wait_on_lock = NULL;
 	list_init(&t->donations);
+	struct file *stdin, *stdout, *stderr;
+	t->fd_arr[0] = stdin;
+	t->fd_arr[1] = stdout;
+	t->fd_arr[2] = stderr;
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should

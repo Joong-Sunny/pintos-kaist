@@ -21,6 +21,7 @@ enum thread_status {
 /* Thread identifier type.
    You can redefine this to whatever type you like. */
 typedef int tid_t;
+typedef int fd_t;
 #define TID_ERROR ((tid_t) -1)          /* Error value for tid_t. */
 
 /* Thread priorities. */
@@ -85,6 +86,7 @@ typedef int tid_t;
  * only because they are mutually exclusive: only a thread in the
  * ready state is on the run queue, whereas only a thread in the
  * blocked state is on a semaphore wait list. */
+
 struct thread {
 	/* Owned by thread.c. */
 	tid_t tid;                          /* Thread identifier. */
@@ -95,17 +97,12 @@ struct thread {
 	struct list_elem allelem;/*TBD sunny: added*/
 	/* Shared between thread.c and synch.c. */
 	struct list_elem elem;              /* List element. */
-	
-	/*TBD sunny: awake할 tick 추가 (변수명_wakeup_tick)*/ 
 	int64_t wakeup_tick;
-	/*TBD done*/
-
-	/*TBD chobae 3. donation 추가된 선언 */
 	int init_priority;	// dontaion 이후 우선순위를 초기화하기 위해 초기값 저장
 	struct lock *wait_on_lock;	// 해당 스레드가 대기 하고 있는 lock 자료 구조의 주소를 저장
 	struct list donations;	// multiple donation을 고려하기 위해 사용
 	struct list_elem donation_elem;	// multiple donation을 고려하기 위해 사용
-	/*TBO DONE*/
+	int fd_arr[128];
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
@@ -172,6 +169,18 @@ bool cmp_delem_priority(const struct list_elem *a, const struct list_elem *b, vo
 void donate_priority(void);
 void remove_with_lock(struct lock *lock);
 void refresh_priority(void);
-/*TBD DONE*/
+
+/* Returns a fd to use for a new thread. */
+static fd_t
+allocate_fd (void) {
+	static fd_t next_fd = 3;
+	fd_t fd;
+	// TBD : allocate_fd 수연
+	// lock_acquire (&fd_lock);
+	fd = next_fd++;
+	// lock_release (&fd_lock);
+
+	return fd;
+}
 
 #endif /* threads/thread.h */
