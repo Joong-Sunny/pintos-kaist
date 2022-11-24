@@ -160,15 +160,6 @@ void halt(void) {
 	power_off();
 }
 
-int write (int fd, const void *buffer, unsigned size) {
-	if (fd == 1) {
-		putbuf(buffer, size);
-		return size;
-	}
-	
-	// return file_write(fd, buffer, size);
-}
-
 // exit() -> 실행중인 스레드? 프로세스? 종료 후 status 리턴
 void exit(int status) {
 	struct thread *cur = thread_current();
@@ -213,6 +204,20 @@ int read (int fd, void *buffer, unsigned size) {
 	file_obj = thread_current()->fd_arr[fd];
 	return file_read(file_obj, buffer, size);
 }
+
+int write (int fd, const void *buffer, unsigned size) {
+	if (fd == 1) {
+		putbuf(buffer, size);
+		return size;
+	}
+	else{
+		struct file* file_obj;
+		file_obj = thread_current()->fd_arr[fd];
+		return file_write(file_obj, buffer, size);
+	}
+}
+
+
 // // write() -> buffer의 내용을 size 바이트만큼 fd에 write
 // int write (int fd, const void *buffer, unsigned size) {
 // 	return file_write(fd, buffer, size);
