@@ -98,10 +98,6 @@ syscall_handler (struct intr_frame *f UNUSED) {
 			f->R.rax = filesize(f->R.rdi);
 			break;
 		case SYS_READ:
-			// printf("========== after checing - SYS_READ?? \n");
-			printf("==== f->R.rdi = %d\n", f->R.rdi);
-			printf("==== f->R.rsi = %s\n", f->R.rsi);
-			printf("==== f->R.rdx = %d\n", f->R.rdx);
 			f->R.rax = read(f->R.rdi, f->R.rsi, f->R.rdx);
 			break;
 		// case SYS_SEEK:
@@ -207,18 +203,14 @@ int open (const char *file) {
 // filesize() -> fd가 가리키는 열려있는 파일의 사이즈를 리턴
 int filesize (int fd) {
 	// fd를 통해 파일을 찾는다.
-	// printf("===== hi 1111 \n");
 	struct file* file = thread_current()->fd_arr[fd];
-	
-	// printf("===== hi 2222 file= %p \n", file);
+
 
 	off_t len = file_length(file);
-	printf(" ======== file_length(file)=%d \n", len);
 	return len;
 }
 // read() -> fd가 가르키는 file에서 size 바이트만큼 buffer로 읽음.
 int read (int fd, void *buffer, unsigned size) {
-	printf("========== after checking?? fd=%d, buffer=%s size=%d \n", fd, buffer, size);
 	return file_read(fd, buffer, size);
 }
 // // write() -> buffer의 내용을 size 바이트만큼 fd에 write
