@@ -204,14 +204,14 @@ int open (const char *file) {
 int filesize (int fd) {
 	// fd를 통해 파일을 찾는다.
 	struct file* file = thread_current()->fd_arr[fd];
-
-
 	off_t len = file_length(file);
 	return len;
 }
 // read() -> fd가 가르키는 file에서 size 바이트만큼 buffer로 읽음.
 int read (int fd, void *buffer, unsigned size) {
-	return file_read(fd, buffer, size);
+	struct file* file_obj;
+	file_obj = thread_current()->fd_arr[fd];
+	return file_read(file_obj, buffer, size);
 }
 // // write() -> buffer의 내용을 size 바이트만큼 fd에 write
 // int write (int fd, const void *buffer, unsigned size) {

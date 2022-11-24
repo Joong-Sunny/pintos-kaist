@@ -102,7 +102,7 @@ struct thread {
 	struct lock *wait_on_lock;	// 해당 스레드가 대기 하고 있는 lock 자료 구조의 주소를 저장
 	struct list donations;	// multiple donation을 고려하기 위해 사용
 	struct list_elem donation_elem;	// multiple donation을 고려하기 위해 사용
-	int fd_arr[128];
+	struct file* fd_arr[128];
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */

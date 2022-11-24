@@ -140,11 +140,8 @@ check_file_handle (int fd,
       if (block_size > sizeof block)
         block_size = sizeof block;
 
-      printf(" ============= [check_file_handle] before read \n");
-
-      //  TODO TBD
       ret_val = read (fd, block, block_size);
-      printf(" ============= [check_file_handle] after read \n");
+
       if (ret_val != block_size)
         fail ("read of %zu bytes at offset %zu in \"%s\" returned %zu",
               block_size, ofs, file_name, ret_val);
