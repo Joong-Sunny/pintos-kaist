@@ -12,7 +12,7 @@
 // #include "filesys/file.c"
 #include "threads/init.h"
 #include "userprog/process.h"
-
+#include "devices/input.h"
 void syscall_entry (void);
 void syscall_handler (struct intr_frame *);
 static int64_t get_user (const uint8_t *uaddr);
@@ -200,6 +200,10 @@ int filesize (int fd) {
 }
 // read() -> fd가 가르키는 file에서 size 바이트만큼 buffer로 읽음.
 int read (int fd, void *buffer, unsigned size) {
+	// fd가 0일때 키보드로 부터 읽어옴.
+	if (fd == 0) {
+		input_getc();
+	}
 	struct file* file_obj;
 	file_obj = thread_current()->fd_arr[fd];
 	return file_read(file_obj, buffer, size);
