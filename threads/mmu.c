@@ -10,6 +10,9 @@
 
 static uint64_t *
 pgdir_walk (uint64_t *pdp, const uint64_t va, int create) {
+	// pdp : 커널 가상메모리 주소 
+	// va : 또다른 커널 가상메모리 주소의 값? 주소 숫자?
+	// create가 참이면 새 페이지 테이블이 생성됨
 	int idx = PDX (va);
 	if (pdp) {
 		uint64_t *pte = (uint64_t *) pdp[idx];
@@ -60,7 +63,12 @@ pdpe_walk (uint64_t *pdpe, const uint64_t va, int create) {
  * If PML4E does not have a page table for VADDR, behavior depends
  * on CREATE.  If CREATE is true, then a new page table is
  * created and a pointer into it is returned.  Otherwise, a null
- * pointer is returned. */
+ * pointer is returned. 
+
+ * 페이지 맵 레벨 4, pml4의 주소 VADDR입니다. 
+ * PML4E에 VADDR용 페이지 테이블이 없는 경우 동작은 CREATE에 따라 다릅니다. 
+ * CREATE가 참이면 새 페이지 테이블이 생성되고 이에 대한 포인터가 반환됩니다. 
+ * 그렇지 않으면 null 포인터가 반환됩니다. */
 uint64_t *
 pml4e_walk (uint64_t *pml4e, const uint64_t va, int create) {
 	uint64_t *pte = NULL;
