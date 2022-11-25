@@ -106,9 +106,9 @@ syscall_handler (struct intr_frame *f UNUSED) {
 		// case SYS_TELL:
 		// 	tell();
 		// 	break;
-		// case SYS_CLOSE:
-		// 	close();
-		// 	break;
+		case SYS_CLOSE:
+			close(f->R.rdi);
+			break;
 		default:
 			// thread_exit()
 			break;
@@ -231,7 +231,13 @@ int write (int fd, const void *buffer, unsigned size) {
 // 	return file_tell(fd);
 // }
 
-// // close() -> fd가 가르키는 파일 닫기
-// void close (int fd) {
-// 	return file_close(fd);
-// }
+// close() -> fd가 가르키는 파일 닫고, 해당 fd를 fd_arr에서 할당해제
+void close (int fd) {
+	struct file* file_obj;
+	file_obj = thread_current()->fd_arr[fd];
+	if (file_obj == NULL) {
+		exit(-1);
+	}
+	file_close(file_obj);
+	thread_current()->fd_arr[fd] = NULL;
+}
