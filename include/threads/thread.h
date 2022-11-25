@@ -102,11 +102,11 @@ struct thread {
 	struct lock *wait_on_lock;	// 해당 스레드가 대기 하고 있는 lock 자료 구조의 주소를 저장
 	struct list donations;	// multiple donation을 고려하기 위해 사용
 	struct list_elem donation_elem;	// multiple donation을 고려하기 위해 사용
-	struct file* fd_arr[128];
 
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */
+	struct file* fd_arr[128];
 #endif
 #ifdef VM
 	/* Table for whole virtual memory owned by thread. */
