@@ -106,7 +106,7 @@ struct thread {
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */
-	struct file* fd_arr[128];
+	struct file* fd_arr[128];	// file 관련 syscall을 위한 fd 테이블
 #endif
 #ifdef VM
 	/* Table for whole virtual memory owned by thread. */
