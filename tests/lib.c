@@ -121,11 +121,8 @@ check_file_handle (int fd,
   /* Warn about file of wrong size.  Don't fail yet because we
      may still be able to get more information by reading the
      file. */
-    //  printf("1111111111\n");
-    // TODO TBD
-  // file_size = filesize (fd);
-  file_size= 373;
-  // printf( "========== %d\n", file_size);
+  file_size = filesize (fd);
+
   if (file_size != size)
     msg ("size of %s (%zu) differs from expected (%zu)",
           file_name, file_size, size);
