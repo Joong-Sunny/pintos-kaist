@@ -454,10 +454,13 @@ init_thread (struct thread *t, const char *name, int priority) {
 	t->magic = THREAD_MAGIC;
 	t->wait_on_lock = NULL;
 	list_init(&t->donations);
+
+#ifdef USERPROG
 	struct file *stdin, *stdout, *stderr;
 	t->fd_arr[0] = stdin;
 	t->fd_arr[1] = stdout;
 	t->fd_arr[2] = stderr;
+#endif
 }
 
 /* Chooses and returns the next thread to be scheduled.  Should
