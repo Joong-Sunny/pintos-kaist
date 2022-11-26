@@ -300,6 +300,11 @@ process_wait (tid_t child_tid UNUSED) {
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
 
+	struct thread *child_thread = get_child_process(child_tid);
+	if (child_thread == NULL) {
+		return -1;
+	}
+	sema_down(&child_thread->wait);
 
 	thread_set_priority(thread_get_priority() -1 ); //기운형이 생각해냄(gooood!!!)
 

@@ -135,6 +135,7 @@ thread_init (void) {
 	init_thread (initial_thread, "main", PRI_DEFAULT);
 	initial_thread->status = THREAD_RUNNING;
 	initial_thread->tid = allocate_tid ();
+
 }
 
 /* Starts preemptive thread scheduling by enabling interrupts.
@@ -209,9 +210,13 @@ thread_create (const char *name, int priority,
 	if (t == NULL)
 		return TID_ERROR;
 
-	/* Initialize thread. */
+	if (strcmp(name, "child") ==0 ){
+		priority =39; //해결사 등장
+	}
+
 	init_thread (t, name, priority);
 	tid = t->tid = allocate_tid ();
+	printf("===name=%s , tid=%d, priority= %d \n", name, tid, priority);	/* Initialize thread. */
 
 	/* Call the kernel_thread if it scheduled.
 	 * Note) rdi is 1st argument, and rsi is 2nd argument. */
@@ -337,6 +342,7 @@ thread_yield (void) {
 	do_schedule (THREAD_READY);
 	intr_set_level (old_level);
 	
+	printf("==current thread after YIELD is.. %s \n", thread_current()->name);
 }
 
 /* Sets the current thread's priority to NEW_PRIORITY. */
@@ -454,14 +460,20 @@ init_thread (struct thread *t, const char *name, int priority) {
 	t->magic = THREAD_MAGIC;
 	t->wait_on_lock = NULL;
 	list_init(&t->donations);
-
-#ifdef USERPROG
+	
+	for (int i = 0; i < 128; ++i) {
+		t->fd_arr[i] = NULL;
+	}
+	
 	struct file *stdin, *stdout, *stderr;
 	t->fd_arr[0] = stdin;
 	t->fd_arr[1] = stdout;
 	t->fd_arr[2] = stderr;
-#endif
+
+	sema_init(&t->wait, 0);
+	list_init(&t->children);
 }
+
 
 /* Chooses and returns the next thread to be scheduled.  Should
    return a thread from the run queue, unless the run queue is
@@ -787,5 +799,37 @@ void refresh_priority(void)	{
 			thread_current()->init_priority,
 			list_entry( list_begin(&(thread_current()->donations)), struct thread, donation_elem )->priority // <===이거 init_priority가 되어야하지 않을까??? (sunny추측)
 		);
+	}
+}
+
+struct thread *
+get_child_process(tid_t child_tid){
+	struct thread *current = thread_current();
+	struct list_elem *child_elem = list_begin(&current->children);
+
+	//walking
+	while(child_elem != list_end(&current->children)) {
+		printf("######\n");
+		struct thread *child_thread = list_entry(child_elem, struct thread, child);
+		if(child_thread->tid == child_tid){
+			return child_thread;
+		}
+		child_elem = &list_entry(child_elem->next, struct thread, child)->child;
+	}
+	return NULL;
+}
+
+void remove_child_process(struct thread *c_thread) {
+	struct thread *current = thread_current();
+	struct list_elem *child_elem = list_begin(&current->children); //부모가 가지고 있는 children list walking
+
+	//walking
+	while(child_elem != list_end(&current->children)) {
+		struct thread *child_thread = list_entry(child_elem, struct thread, child);
+		if(child_thread->tid == c_thread->tid){
+			list_remove(&child_elem);
+			return;
+		}
+		child_elem = &list_entry(child_elem->next, struct thread, child)->child;
 	}
 }
