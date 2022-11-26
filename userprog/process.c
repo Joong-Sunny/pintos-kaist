@@ -80,7 +80,10 @@ initd (void *f_name) {
 tid_t
 process_fork (const char *name, struct intr_frame *if_ UNUSED) {
 	/* Clone current thread to new thread.*/
-	return thread_create (name,	PRI_DEFAULT, __do_fork, thread_current ());  // "child" thread
+	
+	thread_create (name, PRI_DEFAULT, __do_fork, thread_current ());  // "child" thread
+
+	return 0;
 }
 
 #ifndef VM
@@ -105,9 +108,9 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 	*/
 		if (is_kernel_vaddr(va)) {
 			// 부모가 가진 유저영역 데이터
-			return false;
+			// printf("===NNONNO===\n"); //DEBUG
+			return true;
 		}
-		
 	/* 2. Resolve VA from the parent's page map level 4. 
 		 부모의 pml4 로부터 VA를 결정하세요
 	*/
@@ -116,8 +119,9 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 	/* 3. TODO: Allocate new PAL_USER page for the child and set result to NEWPAGE. 
 		       자식을 위해서 새로운 PAL_USER 페이지를 할당하고, NEWPAGE에 저장하세요.
 	*/
-	newpage = palloc_get_page (PAL_USER);  // 커널주소이지만, 유저영역을 가리킴
+	newpage = palloc_get_page (PAL_USER | PAL_ZERO);  // 커널주소이지만, 유저영역을 가리킴
 
+	// printf("===ho==== \n"); //DEBUG
 	/* 4. TODO: Duplicate parent's page to the new page and check whether parent's page is writable or not (set WRITABLE according to the result). 
 			   부모의 페이지를 new page에 복사하고, 그 결과를 부모의 페이지가 writable인지(T/F)에 저장하세요.
 	*/
@@ -131,6 +135,7 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 	*/
 	if (!pml4_set_page (current->pml4, va, newpage, writable)) {
 		/* 6. TODO: if fail to insert page, do error handling. */
+		printf("==== NOT REACHED 222 ===\n");
 		exit(-1);   // TODO: error handling
 	}
 	return true;
@@ -150,7 +155,7 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 static void
 __do_fork (void *aux) {
 	struct intr_frame if_;
-	struct thread *parent = (struct thread *) aux;
+	struct thread *parent = (struct thread *) 	aux;
 	struct thread *current = thread_current ();
 	/* TODO: somehow pass the parent_if. (i.e. process_fork()'s if_)  => 된건가..? */ 
 	struct intr_frame *parent_if;
@@ -158,23 +163,33 @@ __do_fork (void *aux) {
 	bool succ = true;
 
 	/* 1. Read the cpu context to local stack. */
-	memcpy (&if_, &parent->tf, sizeof (struct intr_frame));
-
+	parent_if = &parent->tf;
+	memcpy (&if_, parent_if, sizeof (struct intr_frame));
+	
 	/* 2. Duplicate PT */
 	current->pml4 = pml4_create();
 	if (current->pml4 == NULL)
 		goto error;
+	
 
 	process_activate (current);
-
+	
 #ifdef VM
 	supplemental_page_table_init (&current->spt);
 	if (!supplemental_page_table_copy (&current->spt, &parent->spt))
 		goto error;
 #else
+	// printf("=== in __dofork_... %s \n", parent->name); //DEBUG
+	// printf("=== in __dofork_... %s \n", current->name); //DEBUG
+	if (current->tf.R.rsi = parent->tf.R.rsi){
+		// printf("same!! \n"); //DEBUG
+	}
+
 	if (!pml4_for_each (parent->pml4, duplicate_pte, parent)) {
 		goto error;
 	}
+	
+	// printf("=== in __dofork_... %s \n", current->name); //DEBUG
 #endif
 	
 	/* TODO: Your code goes here.
@@ -188,11 +203,18 @@ __do_fork (void *aux) {
 	 * 			   [주의하세요] 이 함수가 성공적으로 부모의 리소스를 복제하기 전까지는 
 	 * 			   부모가 리턴되면 안됩니다. */
 
-	for (int i = 0; i < 128; ++i) {
-		if (thread_current()->fd_arr[i] == NULL) break;
-		file_duplicate(thread_current()->fd_arr[i]);
+
+
+	for (int i = 3; i < 128; ++i) {
+		if (parent->fd_arr[i] == NULL)
+			break;
+		else{
+			printf("DUP!! i = %d \n", i);
+			current->fd_arr[i] = file_duplicate(parent->fd_arr[i]);
+		}
 	}
 	process_init ();
+	printf("=== All done!! ==== \n");
 
 	/* Finally, switch to the newly created process. */
 	if (succ)
@@ -220,6 +242,8 @@ process_exec (void *f_name) {
 	/* We first kill the current context */
 	process_cleanup ();
 
+
+	printf("===now... we... %s \n",f_name);
 	/* And then load the binary */
 	success = load (file_name, &_if);
 
@@ -304,7 +328,7 @@ process_wait (tid_t child_tid UNUSED) {
 	if (child_thread == NULL) {
 		return -1;
 	}
-	sema_down(&child_thread->wait);
+	// sema_down(&child_thread->wait);
 
 	thread_set_priority(thread_get_priority() -1 ); //기운형이 생각해냄(gooood!!!)
 

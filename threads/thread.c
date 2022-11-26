@@ -234,6 +234,12 @@ thread_create (const char *name, int priority,
 	
 	struct thread *cur = thread_current();
 	
+
+	// if (strcmp(name, "child") ==0 ){
+	// 	// list_push_back(&ready_list, &(t->elem) ); //해결사 등장
+	// 	tid = 0;
+	// }
+
 	if (!list_empty(&ready_list)){
 		// if (cur->priority <= t->priority) {
 		if (!cmp_priority(&(cur->elem), &(t->elem), NULL)){
@@ -334,6 +340,8 @@ thread_yield (void) {
 	struct thread *curr = thread_current ();
 	enum intr_level old_level;
 
+	// printf("==current thread after YIELD is.. %s, next_thread_to run is... %s \n", thread_current()->name, next_thread_to_run()->name);
+
 	ASSERT (!intr_context ());
 
 	old_level = intr_disable ();
@@ -342,7 +350,9 @@ thread_yield (void) {
 	do_schedule (THREAD_READY);
 	intr_set_level (old_level);
 	
-	printf("==current thread after YIELD is.. %s \n", thread_current()->name);
+
+	
+	
 }
 
 /* Sets the current thread's priority to NEW_PRIORITY. */
