@@ -243,7 +243,7 @@ process_exec (void *f_name) {
 	process_cleanup ();
 
 
-	printf("===now... we... %s \n",f_name);
+	// printf("===now... we... %s \n",f_name);
 	/* And then load the binary */
 	success = load (file_name, &_if);
 

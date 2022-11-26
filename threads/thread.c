@@ -216,7 +216,7 @@ thread_create (const char *name, int priority,
 
 	init_thread (t, name, priority);
 	tid = t->tid = allocate_tid ();
-	printf("===name=%s , tid=%d, priority= %d \n", name, tid, priority);	/* Initialize thread. */
+	// printf("===name=%s , tid=%d, priority= %d \n", name, tid, priority);	/* Initialize thread. */
 
 	/* Call the kernel_thread if it scheduled.
 	 * Note) rdi is 1st argument, and rsi is 2nd argument. */
@@ -242,7 +242,7 @@ thread_create (const char *name, int priority,
 
 	if (!list_empty(&ready_list)){
 		// if (cur->priority <= t->priority) {
-		if (!cmp_priority(&(cur->elem), &(t->elem), NULL)){
+		if (cmp_priority(&(t->elem), &(cur->elem), NULL)){
 			thread_yield();
 		}
 	}
@@ -720,7 +720,7 @@ void test_max_priority(void){
 	// ready_list가 비어있지 않은지 확인
 
 	if(!list_empty(&ready_list)) {
-		if (!cmp_priority(&(thread_current()->elem), &(list_entry(list_begin(&ready_list), struct thread, elem)->elem), NULL)) {
+		if (cmp_priority(&(list_entry(list_begin(&ready_list), struct thread, elem)->elem), &(thread_current()->elem), NULL)) {
 			/*현재쓰레드.priority <= readylist의 첫번째*/
 			thread_yield();
 		}
