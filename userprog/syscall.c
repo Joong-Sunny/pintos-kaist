@@ -63,15 +63,16 @@ syscall_handler (struct intr_frame *f UNUSED) {
 			// printf("== f->R.rdx== %d \n", f->R.rdx);
 			exit(f->R.rdi);
 			break;
-		// case SYS_FORK:
-		// 	fork();
-		// 	break;
+		case SYS_FORK:
+			f->R.rax = fork(f->R.rdi);
+			break;
 		// case SYS_EXEC:
 		// 	exec(f->R.rdi);
 		// 	break;
-		// case SYS_WAIT:
-		// 	wait();
-		// 	break;
+		case SYS_WAIT:
+			// TODO: 종료되었는지 확인?
+			f->R.rax = wait(f->R.rdi);
+			break;
 		case SYS_CREATE:
 			// printf("=== get_user result = %d\n", get_user(f->R.rdi));
 			if (f->R.rdi == NULL || get_user (f->R.rdi) == -1 || is_kernel_vaddr(f->R.rdi)) {
@@ -166,6 +167,17 @@ void exit(int status) {
 	thread_current()->tf.R.rdi = status;
 	printf("%s: exit(%d)\n", cur->name, status);
 	thread_exit();
+}
+
+// fork() ->  💩💩왕중요💩💩
+pid_t fork (const char *thread_name) {
+	return process_fork(thread_name, &(thread_current()->tf));
+}
+
+// wait() -> 자식 스레드가 일을 마칠때까지 기다림  💩💩왕중요💩💩
+int wait (pid_t pid) {
+	//  TODO: pid != tid 이슈가 있을 수 있음 
+	return process_wait(pid);
 }
 
 // create() -> 파일 이름과 크기에 해당하는 파일 생성
