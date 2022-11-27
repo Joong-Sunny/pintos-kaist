@@ -45,7 +45,7 @@ syscall_init (void) {
 
 /* The main system call interface */
 void
-syscall_handler (struct intr_frame *f UNUSED) {
+syscall_handler (struct intr_frame *f UNUSED ) {
 	// TODO: Your implementation goes here.
 	// 유저 스택에 저장되어 있는 시스템 콜 넘버를 이용해 시스템 콜 핸들러 구현
 	// 스택 포인터가 유저 영역인지 확인
@@ -64,7 +64,7 @@ syscall_handler (struct intr_frame *f UNUSED) {
 			exit(f->R.rdi);
 			break;
 		case SYS_FORK:
-			f->R.rax = fork(f->R.rdi);
+			f->R.rax =  fork(f->R.rdi);
 			break;
 		// case SYS_EXEC:
 		// 	exec(f->R.rdi);
@@ -165,13 +165,16 @@ void halt(void) {
 void exit(int status) {
 	struct thread *cur = thread_current();
 	thread_current()->tf.R.rdi = status;
+	thread_current()->is_exit = 1;
+	thread_current()->exit_status = status; 
 	printf("%s: exit(%d)\n", cur->name, status);
 	thread_exit();
 }
 
 // fork() ->  💩💩왕중요💩💩
 pid_t fork (const char *thread_name) {
-	return process_fork(thread_name, &(thread_current()->tf));
+	printf("===== FORK RETURNED ======== 	\n");
+	return process_fork(thread_name, &thread_current()->tf);
 }
 
 // wait() -> 자식 스레드가 일을 마칠때까지 기다림  💩💩왕중요💩💩

@@ -103,10 +103,17 @@ struct thread {
 	struct lock *wait_on_lock;	// 해당 스레드가 대기 하고 있는 lock 자료 구조의 주소를 저장
 	struct list donations;	// multiple donation을 고려하기 위해 사용
 	struct list_elem donation_elem;	// multiple donation을 고려하기 위해 사용
-	struct file* fd_arr[128];	// file 관련 syscall을 위한 fd 테이블
+	struct file* fd_arr[128];
+	
 	struct semaphore wait;
-	struct list_elem child;	
-	struct list children;
+	struct semaphore fork;
+	tid_t parent_tid;
+	int is_exit;
+	int exit_status;
+	struct list_elem child;              
+	struct list children;	
+
+
 #ifdef USERPROG
 	/* Owned by userprog/process.c. */
 	uint64_t *pml4;                     /* Page map level 4 */
@@ -120,6 +127,7 @@ struct thread {
 	struct intr_frame tf;               /* Information for switching */
 	unsigned magic;                     /* Detects stack overflow. */
 };
+
 
 /* If false (default), use round-robin scheduler.
    If true, use multi-level feedback queue scheduler.
@@ -185,5 +193,12 @@ allocate_fd (void) {
 
 	return fd;
 }
+
+
+
+struct thread *find_forked_thread(tid_t parent_tid);
+struct thread *get_child_thread(tid_t curent_tid);
+void push_readylist(struct thread* thread);
+
 
 #endif /* threads/thread.h */

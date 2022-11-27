@@ -55,7 +55,7 @@ process_create_initd (const char *file_name) {
 	char *first_file_name = strtok_r(file_name, " ", &next_ptr);
 
 	/* Create a new thread to execute FILE_NAME. */
-	tid = thread_create (first_file_name, thread_current()->priority + 3, initd, fn_copy);
+	tid = thread_create (first_file_name, PRI_DEFAULT, initd, fn_copy);
 	if (tid == TID_ERROR)
 		palloc_free_page (fn_copy);
 	return tid;
@@ -81,9 +81,18 @@ tid_t
 process_fork (const char *name, struct intr_frame *if_ UNUSED) {
 	/* Clone current thread to new thread.*/
 	
-	thread_create (name, PRI_DEFAULT, __do_fork, thread_current ());  // "child" thread
+  	tid_t child_tid = thread_create (name, PRI_DEFAULT, __do_fork, thread_current ());  // "child" thread
+	struct thread *child_thread = get_child_thread(child_tid);
 
-	return 0;
+	if (child_thread == NULL){
+
+	}
+	else{
+		sema_down(&child_thread->fork);
+		return child_tid;
+	}
+
+	return 999;
 }
 
 #ifndef VM
@@ -115,11 +124,17 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 		 부모의 pml4 로부터 VA를 결정하세요
 	*/
 	parent_page = pml4_get_page (parent->pml4, va);   // 커널 주소 반환 = pte ? 
+	if(parent_page == NULL){
+		printf("OMGOMGOMGOMGOMGOMG1111\n");
+	}
 
 	/* 3. TODO: Allocate new PAL_USER page for the child and set result to NEWPAGE. 
 		       자식을 위해서 새로운 PAL_USER 페이지를 할당하고, NEWPAGE에 저장하세요.
 	*/
 	newpage = palloc_get_page (PAL_USER | PAL_ZERO);  // 커널주소이지만, 유저영역을 가리킴
+	if(newpage == NULL){
+		printf("OMGOMGOMGOMGOMGOMG2222\n");
+	}
 
 	// printf("===ho==== \n"); //DEBUG
 	/* 4. TODO: Duplicate parent's page to the new page and check whether parent's page is writable or not (set WRITABLE according to the result). 
@@ -127,6 +142,14 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 	*/
 	// memmove(newpage, parent_page, PGSIZE / sizeof(uint64_t *));
 	writable = is_writable(pte);
+
+	if (!writable){
+		printf("OMGOMGOMGOMGOMGOMG 2.2!! \n");
+	}
+	else{
+		printf("OMGOMGOMGOMGOMGOMG 7.7!! \n");
+	}
+
 	memcpy(newpage, parent_page, PGSIZE);
 	// printf(" ===== parent_page ptr = %p\n", parent_page);
 
@@ -135,7 +158,7 @@ duplicate_pte (uint64_t *pte, void *va, void *aux) {
 	*/
 	if (!pml4_set_page (current->pml4, va, newpage, writable)) {
 		/* 6. TODO: if fail to insert page, do error handling. */
-		printf("==== NOT REACHED 222 ===\n");
+		printf("OMGOMGOMGOMGOMGOMG333\n");
 		exit(-1);   // TODO: error handling
 	}
 	return true;
@@ -165,6 +188,7 @@ __do_fork (void *aux) {
 	/* 1. Read the cpu context to local stack. */
 	parent_if = &parent->tf;
 	memcpy (&if_, parent_if, sizeof (struct intr_frame));
+	if_.R.rax =0;
 	
 	/* 2. Duplicate PT */
 	current->pml4 = pml4_create();
@@ -203,25 +227,43 @@ __do_fork (void *aux) {
 	 * 			   [주의하세요] 이 함수가 성공적으로 부모의 리소스를 복제하기 전까지는 
 	 * 			   부모가 리턴되면 안됩니다. */
 
+	// if (parent->fd_arr[3] == NULL){
+	// 	printf("OMGOMGOMG999999 \n");
+	// }
+	
+	// current->fd_arr[3] = filesys_open("fork-once");
 
-
-	for (int i = 3; i < 128; ++i) {
-		if (parent->fd_arr[i] == NULL)
-			break;
-		else{
-			printf("DUP!! i = %d \n", i);
-			current->fd_arr[i] = file_duplicate(parent->fd_arr[i]);
-		}
-	}
+	// for (int i = 3; i < 128; ++i) {
+	// 	if (parent->fd_arr[i] == NULL)
+	// 		break;
+	// 	else{
+	// 		printf("DUP!! i = %d \n", i);
+	// 		current->fd_arr[i] = file_duplicate(parent->fd_arr[i]);
+	// 		if (current -> fd_arr[i] == NULL){
+	// 			printf("OMGOMGOMG4444444\n");
+	// 		}
+	// 		else{
+	// 			char buffer[8];
+	// 			printf("read, %d \n", file_read(current->fd_arr[i],buffer, 8 ) );
+	// 		}
+	// 	}
+	// }
+	
 	process_init ();
-	printf("=== All done!! ==== \n");
+	printf("=== ALL done!! ==== \n");
+
+
+	sema_up(&current->fork);
 
 	/* Finally, switch to the newly created process. */
 	if (succ)
 		do_iret (&if_);
+
 	return (0);
 error:
-	thread_exit ();
+	sema_up(&current->fork);
+	exit(81);
+	// thread_exit ();
 }
 
 /* Switch the current execution context to the f_name.
@@ -324,22 +366,35 @@ process_wait (tid_t child_tid UNUSED) {
 	 * XXX:       to add infinite loop here before
 	 * XXX:       implementing the process_wait. */
 
-	struct thread *child_thread = get_child_process(child_tid);
-	if (child_thread == NULL) {
-		return -1;
+	struct thread *child_thread =get_child_thread(child_tid);
+	
+	printf("=== I'm %s, waiting for %s \n", thread_current()->name, child_thread->name);
+	if (child_thread == NULL){
+		printf("===It is NULL...===\n");
+		return 81;
 	}
+	else
+	{	printf("==========waiting start ============\n");
+		// printf("my name is... %s, I'm gonna sleep222 \n", thread_current()->name);
+		
+	
+		child_thread->status = THREAD_READY;
+		sema_down(&child_thread->wait);
+
+		printf("    ======wake up!!! =====    \n");
+		if (child_thread->is_exit)
+			return child_thread->exit_status;
+		
+	}
+	return 777;
+
+	// struct thread *child_thread = get_child_process(child_tid);
+	// if (child_thread == NULL) {
+	// 	return -1;
+	// }
 	// sema_down(&child_thread->wait);
 
-	thread_set_priority(thread_get_priority() -1 ); //기운형이 생각해냄(gooood!!!)
-
-	// enum intr_level old_level;
-	// old_level = intr_disable ();
-	// while(true){
-	// 	thread_block ();
-	// 	//TBD sunny: change infinity loop condition
-	// }
-	// intr_set_level (old_level);
-
+	// thread_set_priority(thread_get_priority() -1 ); //기운형이 생각해냄(gooood!!!)
 	// return -1;
 }
 
@@ -352,6 +407,12 @@ process_exit (void) {
 	 * TODO: project2/process_termination.html).
 	 * TODO: We recommend you to implement process resource cleanup here. */
 
+	close(3);
+	close(2);
+	close(1);
+	close(0);
+
+	palloc_free_multiple(curr->fd_arr, 3);
 	process_cleanup ();
 }
 

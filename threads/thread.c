@@ -210,13 +210,13 @@ thread_create (const char *name, int priority,
 	if (t == NULL)
 		return TID_ERROR;
 
-	if (strcmp(name, "child") ==0 ){
-		priority =39; //해결사 등장
-	}
+	// if (strcmp(name, "child") ==0 ){
+	// 	priority =39; //해결사 등장
+	// }
 
 	init_thread (t, name, priority);
 	tid = t->tid = allocate_tid ();
-	// printf("===name=%s , tid=%d, priority= %d \n", name, tid, priority);	/* Initialize thread. */
+	printf("===name=%s , tid=%d, priority= %d \n", name, tid, priority);	/* Initialize thread. */
 
 	/* Call the kernel_thread if it scheduled.
 	 * Note) rdi is 1st argument, and rsi is 2nd argument. */
@@ -230,15 +230,19 @@ thread_create (const char *name, int priority,
 	t->tf.eflags = FLAG_IF;
 
 	t->priority = priority;
+	t->parent_tid = thread_current()->tid;
+	list_push_back(&thread_current()->children, &t->child);
+
 	thread_unblock (t); // readylist <- (t) insert!
 	
 	struct thread *cur = thread_current();
 	
 
-	// if (strcmp(name, "child") ==0 ){
-	// 	// list_push_back(&ready_list, &(t->elem) ); //해결사 등장
-	// 	tid = 0;
-	// }
+	if (strcmp(name, "child") ==0 ){
+		// list_push_back(&ready_list, &(t->elem) ); //해결사 등장
+		// tid = 0;
+	}
+	else{
 
 	if (!list_empty(&ready_list)){
 		// if (cur->priority <= t->priority) {
@@ -247,6 +251,7 @@ thread_create (const char *name, int priority,
 		}
 	}
 
+	}
 	return tid;
 }
 
@@ -298,7 +303,6 @@ thread_name (void) {
 struct thread *
 thread_current (void) {
 	struct thread *t = running_thread ();
-
 	/* Make sure T is really a thread.
 	   If either of these assertions fire, then your thread may
 	   have overflowed its stack.  Each thread has less than 4 kB
@@ -323,7 +327,10 @@ thread_exit (void) {
 	ASSERT (!intr_context ());
 
 #ifdef USERPROG
+	
 	process_exit ();
+	sema_up(&thread_current()->wait);
+	
 #endif
 
 	/* Just set our status to dying and schedule another process.
@@ -349,9 +356,6 @@ thread_yield (void) {
 		list_insert_ordered (&ready_list, &curr->elem, cmp_priority, NULL);
 	do_schedule (THREAD_READY);
 	intr_set_level (old_level);
-	
-
-	
 	
 }
 
@@ -481,6 +485,9 @@ init_thread (struct thread *t, const char *name, int priority) {
 	t->fd_arr[2] = stderr;
 
 	sema_init(&t->wait, 0);
+	t->parent_tid = 0;
+	t->is_exit = 0;
+	t->exit_status = 0;
 	list_init(&t->children);
 }
 
@@ -812,34 +819,75 @@ void refresh_priority(void)	{
 	}
 }
 
-struct thread *
-get_child_process(tid_t child_tid){
-	struct thread *current = thread_current();
-	struct list_elem *child_elem = list_begin(&current->children);
+// struct thread *
+// get_child_process(tid_t child_tid){
+// 	struct thread *current = thread_current();
+// 	struct list_elem *child_elem = list_begin(&current->children);
 
-	//walking
-	while(child_elem != list_end(&current->children)) {
-		printf("######\n");
-		struct thread *child_thread = list_entry(child_elem, struct thread, child);
-		if(child_thread->tid == child_tid){
-			return child_thread;
+// 	//walking
+// 	while(child_elem != list_end(&current->children)) {
+// 		printf("######\n");
+// 		struct thread *child_thread = list_entry(child_elem, struct thread, child);
+// 		if(child_thread->tid == child_tid){
+// 			return child_thread;
+// 		}
+// 		child_elem = &list_entry(child_elem->next, struct thread, child)->child;
+// 	}
+// 	return NULL;
+// }
+
+// void remove_child_process(struct thread *c_thread) {
+// 	struct thread *current = thread_current();
+// 	struct list_elem *child_elem = list_begin(&current->children); //부모가 가지고 있는 children list walking
+
+// 	//walking
+// 	while(child_elem != list_end(&current->children)) {
+// 		struct thread *child_thread = list_entry(child_elem, struct thread, child);
+// 		if(child_thread->tid == c_thread->tid){
+// 			list_remove(&child_elem);
+// 			return;
+// 		}
+// 		child_elem = &list_entry(child_elem->next, struct thread, child)->child;
+// 	}
+// }
+
+struct thread *
+find_forked_thread(tid_t parent_tid){
+
+	//1. 레디리스트에서 헤드 찾기
+	struct list_elem *e = list_begin(&ready_list);
+	//2. walking
+	struct thread* t;
+	//3. 현재 실행스레드의 자식스레드인지 확인
+	while(e != list_end(&ready_list)){
+		t = list_entry(e, struct thread, elem);
+		// printf("자식 찾았다! 부모 tid=%d, 찾은 자식=%d\n", t->parent_tid, t->tid);
+		if(t->parent_tid == parent_tid){
+			return t;
 		}
-		child_elem = &list_entry(child_elem->next, struct thread, child)->child;
+		e = e->next;
 	}
 	return NULL;
 }
 
-void remove_child_process(struct thread *c_thread) {
-	struct thread *current = thread_current();
-	struct list_elem *child_elem = list_begin(&current->children); //부모가 가지고 있는 children list walking
 
-	//walking
-	while(child_elem != list_end(&current->children)) {
-		struct thread *child_thread = list_entry(child_elem, struct thread, child);
-		if(child_thread->tid == c_thread->tid){
-			list_remove(&child_elem);
-			return;
+struct thread *get_child_thread(tid_t child_tid) {
+	//1. 현재스레드의 자식리스트에서 헤드 찾기
+	struct list_elem *e = list_begin(&thread_current()->children);
+	//2. walking
+	struct thread* t;
+	//3. 인자로 받은 child_tid랑 같은 스레드 있는지 탐색
+	while(true){
+		t = list_entry(e, struct thread, child);
+		if(t->tid == child_tid){
+			return t;
 		}
-		child_elem = &list_entry(child_elem->next, struct thread, child)->child;
+		e = e->next;
 	}
+	return NULL;
+}
+
+
+void push_readylist(struct thread* thread){
+	list_push_front(&ready_list, &thread->elem);
 }
